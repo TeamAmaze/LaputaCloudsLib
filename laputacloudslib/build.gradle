@@ -47,6 +47,10 @@ dependencies {
     implementation 'com.microsoft.aad:adal:1.1.7'
 
 
+    //DropBox
+    implementation 'com.dropbox.core:dropbox-core-sdk:3.1.3'
+
+
 
     testImplementation 'junit:junit:4.12'
 

@@ -18,3 +18,60 @@ abstract class AbstractCloudFile {
     abstract fun uploadHere(inputStream: InputStream, name: String, size: Long, callback: (uploadedFile: AbstractCloudFile) -> Unit)
 }
 
+class DropBoxFile : AbstractCloudFile() {
+    override val name: String
+        get() = TODO("not implemented") //To change initializer of created properties use File | Settings | File Templates.
+    override val path: String
+        get() = TODO("not implemented") //To change initializer of created properties use File | Settings | File Templates.
+    override val isDirectory: Boolean
+        get() = TODO("not implemented") //To change initializer of created properties use File | Settings | File Templates.
+    override val isRootDirectory: Boolean
+        get() = TODO("not implemented") //To change initializer of created properties use File | Settings | File Templates.
+    override val byteSize: Long
+        get() = TODO("not implemented") //To change initializer of created properties use File | Settings | File Templates.
+
+    override fun getParent(callback: (AbstractCloudFile?) -> Unit) {
+        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+    }
+
+    override fun delete(callback: () -> Unit) {
+        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+    }
+
+    override fun copyTo(
+        newName: String,
+        folder: AbstractCloudFile,
+        callback: (AbstractCloudCopyStatus) -> Unit
+    ) {
+        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+    }
+
+    override fun moveTo(
+        newName: String,
+        folder: AbstractCloudFile,
+        callback: (AbstractCloudFile) -> Unit
+    ) {
+        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+    }
+
+    override fun download(callback: (InputStream) -> Unit) {
+        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+    }
+
+    override fun uploadHere(
+        fileToUpload: AbstractCloudFile,
+        callback: (uploadedFile: AbstractCloudFile) -> Unit
+    ) {
+        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+    }
+
+    override fun uploadHere(
+        inputStream: InputStream,
+        name: String,
+        size: Long,
+        callback: (uploadedFile: AbstractCloudFile) -> Unit
+    ) {
+        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+    }
+
+}
