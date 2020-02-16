@@ -4,6 +4,7 @@ import android.os.Build
 import android.os.Environment
 import androidx.annotation.FloatRange
 import com.amaze.laputacloudslib.*
+import com.amaze.laputacloudslib.AbstractCloudCopyStatus
 import java.io.File
 import java.io.IOException
 import java.io.InputStream

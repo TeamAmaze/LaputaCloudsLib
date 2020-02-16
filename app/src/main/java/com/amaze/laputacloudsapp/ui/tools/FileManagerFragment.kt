@@ -17,7 +17,7 @@ import com.amaze.laputacloudsapp.redirectionUri
 import com.amaze.laputacloudsapp.ui.tools.dialogs.FileActionsDialogFragment
 import com.amaze.laputacloudslib.AbstractCloudFile
 import com.amaze.laputacloudslib.Clouds
-import com.amaze.laputacloudslib.OneDriveAccount
+import com.amaze.laputacloudslib.onedrive.OneDriveAccount
 
 class FileManagerFragment : Fragment(), AdapterView.OnItemClickListener,
     AdapterView.OnItemLongClickListener {
@@ -192,7 +192,12 @@ class FileManagerFragment : Fragment(), AdapterView.OnItemClickListener,
 
     private fun getCloudAccount(id: Int) = when (id) {
         ACCOUNT_PHONE -> PhoneAccount()
-        ACCOUNT_ONEDRIVE -> OneDriveAccount(requireActivity(), MSAAClientId, redirectionUri, null)
+        ACCOUNT_ONEDRIVE -> OneDriveAccount(
+            requireActivity(),
+            MSAAClientId,
+            redirectionUri,
+            null
+        )
         else -> throw IllegalArgumentException()
     }
 

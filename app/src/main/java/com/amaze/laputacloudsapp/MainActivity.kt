@@ -15,7 +15,7 @@ import androidx.navigation.ui.setupActionBarWithNavController
 import androidx.navigation.ui.setupWithNavController
 import com.amaze.laputacloudsapp.models.UploadViewModel
 import com.amaze.laputacloudslib.AbstractCloudFile
-import com.amaze.laputacloudslib.OneDriveIOException
+import com.amaze.laputacloudslib.onedrive.OneDriveIOException
 import com.google.android.material.floatingactionbutton.FloatingActionButton
 import com.google.android.material.navigation.NavigationView
 import com.google.android.material.snackbar.Snackbar
