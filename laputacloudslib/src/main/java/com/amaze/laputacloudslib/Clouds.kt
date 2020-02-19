@@ -1,11 +1,21 @@
 package com.amaze.laputacloudslib
 
+import androidx.lifecycle.LifecycleOwner
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+
 object Clouds {
 
-    fun init(account: AbstractAccount, callback: (AbstractFileStructureDriver) -> Unit) {
-        account.tryLogInAsync { user ->
-            user.getFileStructureDriverAsync { fileStructureDriver ->
-                callback(fileStructureDriver)
+    fun init(
+        account: AbstractAccount,
+        callback: suspend (AbstractFileStructureDriver) -> Unit
+    ) {
+        CoroutineScope(Dispatchers.Main).launch {
+            account.tryLogInAsync { user ->
+                user.getFileStructureDriverAsync { fileStructureDriver ->
+                    callback(fileStructureDriver)
+                }
             }
         }
     }

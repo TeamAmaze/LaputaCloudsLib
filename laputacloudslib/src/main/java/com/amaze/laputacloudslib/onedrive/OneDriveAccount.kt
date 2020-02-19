@@ -12,6 +12,9 @@ import com.onedrive.sdk.core.DefaultClientConfig
 import com.onedrive.sdk.core.IClientConfig
 import com.onedrive.sdk.extensions.IOneDriveClient
 import com.onedrive.sdk.extensions.OneDriveClient
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import java.lang.IllegalArgumentException
 
 /**
@@ -36,7 +39,7 @@ class OneDriveAccount(
         override fun getRedirectUrl() = redirectionUri
     }
 
-    override fun tryLogInAsync(callback: (AbstractUser<out AbstractFileStructureDriver>) -> Unit) {
+    override suspend fun tryLogInAsync(callback: suspend (AbstractUser<out AbstractFileStructureDriver>) -> Unit) {
         val oneDriveConfig: IClientConfig =
             if(msaaClientId != null && redirectionUri != null && adalClientId != null) {
                 DefaultClientConfig.createWithAuthenticators(
@@ -64,11 +67,10 @@ class OneDriveAccount(
                 .loginAndBuildClient(activity, object:
                     ICallback<IOneDriveClient> {
                     override fun success(oneDriveClient: IOneDriveClient) {
-                        callback(
-                            OneDriveUser(
-                                oneDriveClient
-                            )
-                        )
+                        CoroutineScope(Dispatchers.Main).launch {
+                            callback(OneDriveUser(oneDriveClient))
+                        }
+
                     }
 
                     override fun failure(ex: ClientException) {

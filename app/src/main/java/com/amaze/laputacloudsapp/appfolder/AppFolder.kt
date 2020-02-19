@@ -93,13 +93,13 @@ class PhoneDriver : AbstractFileStructureDriver() {
     override val SCHEME: String
         = falseRoot
 
-    override fun getFiles(path: String, callback: (List<AbstractCloudFile>) -> Unit) {
+    override suspend fun getFiles(path: String, callback: suspend (List<AbstractCloudFile>) -> Unit) {
         callback(File(path).listFiles()!!.map {  it: File ->
             PhoneFile(falseRoot, it.canonicalPath)
         })
     }
 
-    override fun getFile(path: String, callback: (AbstractCloudFile) -> Unit) {
+    override suspend fun getFile(path: String, callback: suspend (AbstractCloudFile) -> Unit) {
         callback(PhoneFile(falseRoot, File(path).canonicalPath))
     }
 
@@ -133,13 +133,13 @@ class PhoneDriver : AbstractFileStructureDriver() {
 }
 
 class PhoneUser : AbstractUser<PhoneDriver>() {
-    override fun getFileStructureDriverAsync(callback: (PhoneDriver) -> Unit) {
+    override suspend fun getFileStructureDriverAsync(callback: suspend (PhoneDriver) -> Unit) {
         callback(PhoneDriver())
     }
 }
 
 class PhoneAccount : AbstractAccount() {
-    override fun tryLogInAsync(callback: (AbstractUser<out AbstractFileStructureDriver>) -> Unit) {
+    override suspend fun tryLogInAsync(callback: suspend (AbstractUser<out AbstractFileStructureDriver>) -> Unit) {
         callback(PhoneUser())
     }
 }

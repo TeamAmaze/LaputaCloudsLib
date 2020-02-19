@@ -12,7 +12,7 @@ class OneDriveDriver(val oneDriveClient: IOneDriveClient) : AbstractFileStructur
     override val SCHEME: String =
         Companion.SCHEME
 
-    override fun getFiles(path: String, callback: (List<AbstractCloudFile>) -> Unit) {
+    override suspend fun getFiles(path: String, callback: suspend (List<AbstractCloudFile>) -> Unit) {
         val rawPath =
             sanitizeRawPath(
                 removeScheme(path)
@@ -30,7 +30,7 @@ class OneDriveDriver(val oneDriveClient: IOneDriveClient) : AbstractFileStructur
             })
     }
 
-    override fun getFile(path: String, callback: (AbstractCloudFile) -> Unit) {
+    override suspend fun getFile(path: String, callback: suspend (AbstractCloudFile) -> Unit) {
         val rawPath =
             sanitizeRawPath(
                 removeScheme(path)

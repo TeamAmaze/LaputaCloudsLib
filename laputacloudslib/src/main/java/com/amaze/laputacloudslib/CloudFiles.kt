@@ -1,5 +1,6 @@
 package com.amaze.laputacloudslib
 
+import com.dropbox.core.v2.files.Metadata
 import java.io.InputStream
 
 abstract class AbstractCloudFile {
@@ -18,15 +19,12 @@ abstract class AbstractCloudFile {
     abstract fun uploadHere(inputStream: InputStream, name: String, size: Long, callback: (uploadedFile: AbstractCloudFile) -> Unit)
 }
 
-class DropBoxFile : AbstractCloudFile() {
-    override val name: String
-        get() = TODO("not implemented") //To change initializer of created properties use File | Settings | File Templates.
-    override val path: String
-        get() = TODO("not implemented") //To change initializer of created properties use File | Settings | File Templates.
+class DropBoxFile(
+    override val path: String,
+    override val isRootDirectory: Boolean,
+    override val name: String,
     override val isDirectory: Boolean
-        get() = TODO("not implemented") //To change initializer of created properties use File | Settings | File Templates.
-    override val isRootDirectory: Boolean
-        get() = TODO("not implemented") //To change initializer of created properties use File | Settings | File Templates.
+) : AbstractCloudFile() {
     override val byteSize: Long
         get() = TODO("not implemented") //To change initializer of created properties use File | Settings | File Templates.
 

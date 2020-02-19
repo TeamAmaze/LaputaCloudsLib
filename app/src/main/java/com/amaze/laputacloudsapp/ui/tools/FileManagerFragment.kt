@@ -9,15 +9,16 @@ import androidx.fragment.app.Fragment
 import androidx.lifecycle.Observer
 import androidx.lifecycle.ViewModelProviders
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout
-import com.amaze.laputacloudsapp.MSAAClientId
-import com.amaze.laputacloudsapp.MainActivity
-import com.amaze.laputacloudsapp.R
+import com.amaze.laputacloudsapp.*
 import com.amaze.laputacloudsapp.appfolder.PhoneAccount
-import com.amaze.laputacloudsapp.redirectionUri
 import com.amaze.laputacloudsapp.ui.tools.dialogs.FileActionsDialogFragment
+import com.amaze.laputacloudslib.AbstractAccount
 import com.amaze.laputacloudslib.AbstractCloudFile
 import com.amaze.laputacloudslib.Clouds
+import com.amaze.laputacloudslib.DropBoxAccount
 import com.amaze.laputacloudslib.onedrive.OneDriveAccount
+import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.launch
 
 class FileManagerFragment : Fragment(), AdapterView.OnItemClickListener,
     AdapterView.OnItemLongClickListener {
@@ -27,6 +28,7 @@ class FileManagerFragment : Fragment(), AdapterView.OnItemClickListener,
 
         const val ACCOUNT_PHONE = -1
         const val ACCOUNT_ONEDRIVE = 1
+        const val ACCOUNT_DROPBOX = 2
     }
 
     lateinit var fileManagerViewModel: FileManagerViewModel
@@ -79,10 +81,11 @@ class FileManagerFragment : Fragment(), AdapterView.OnItemClickListener,
                 driver.getFiles(file.path) { files ->
                     this.files = files
 
-                    val adapter = (filesListView.adapter as ArrayAdapter<FileListAdapter.FileData>)
+                    val adapter =
+                        (filesListView.adapter as ArrayAdapter<FileListAdapter.FileData>)
 
                     adapter.clear()
-                    if(!file.isRootDirectory) {
+                    if (!file.isRootDirectory) {
                         adapter.add(FileListAdapter.FileData("..", true))
                     }
                     adapter.addAll(files.map {
@@ -92,6 +95,7 @@ class FileManagerFragment : Fragment(), AdapterView.OnItemClickListener,
                     swipeRefreshLayout.endLoad()
                 }
             }
+
         })
 
         fileManagerViewModel.moveStatus.observe(this, Observer { copiedFile ->
@@ -190,13 +194,16 @@ class FileManagerFragment : Fragment(), AdapterView.OnItemClickListener,
             else -> false
         }
 
-    private fun getCloudAccount(id: Int) = when (id) {
+    private fun getCloudAccount(id: Int): AbstractAccount = when (id) {
         ACCOUNT_PHONE -> PhoneAccount()
         ACCOUNT_ONEDRIVE -> OneDriveAccount(
             requireActivity(),
             MSAAClientId,
             redirectionUri,
             null
+        )
+        ACCOUNT_DROPBOX -> DropBoxAccount(
+            accessToken
         )
         else -> throw IllegalArgumentException()
     }
