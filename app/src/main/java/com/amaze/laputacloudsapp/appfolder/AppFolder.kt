@@ -3,8 +3,10 @@ package com.amaze.laputacloudsapp.appfolder
 import android.os.Build
 import android.os.Environment
 import androidx.annotation.FloatRange
+import com.amaze.laputacloudsapp.appfolder.PhoneDriver.Companion.FALSE_ROOT
 import com.amaze.laputacloudslib.*
 import com.amaze.laputacloudslib.AbstractCloudCopyStatus
+import com.amaze.laputacloudslib.CloudPath.Companion.SEPARATOR
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -15,17 +17,17 @@ import java.io.InputStream
 class PhoneFile(
     override val path: CloudPath
 ) : AbstractCloudFile() {
-    val file = File(path.sanitizedPath)
+    val file = (path as PhonePath).toFile()
 
     override val name = file.name
     override val isDirectory = file.isDirectory
-    override val isRootDirectory = path.sanitizedPath.isEmpty()
+    override val isRootDirectory = path.sanitizedPath == SEPARATOR
     override val byteSize = file.length()
 
     override fun getParent(callback: suspend (AbstractCloudFile?) -> Unit) {
-        val parentPath = file.parent
+        val parentPath = file.parentFile?.toPhonePath()
         CoroutineScope(Dispatchers.Main).launch {
-            callback(if (parentPath == null) null else PhoneFile(PhonePath(parentPath)))
+            callback(if (parentPath == null) null else PhoneFile(parentPath))
         }
     }
 
@@ -67,7 +69,7 @@ class PhoneFile(
         folder as PhoneFile
 
         val targetFile = File(folder.file, newName)
-        callback(PhoneFile(PhonePath(targetFile.canonicalPath)))
+        callback(PhoneFile(targetFile.toPhonePath()))
     }
 
     override fun download(callback: (InputStream) -> Unit) {
@@ -93,54 +95,67 @@ class PhoneFile(
 }
 
 class PhoneDriver : AbstractFileStructureDriver() {
+    companion object {
+        val FALSE_ROOT = getStartingFile().canonicalPath
+
+        @JvmStatic
+        private fun getStartingFile(): File {
+            lateinit var externalDir: File
+
+            if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) {
+                if (isEmulator()) {
+                    externalDir = File("/sdcard/")
+                } else {
+                    val externalFile = Environment.getExternalStorageDirectory()
+                        ?: throw IOException("Failed to read files")
+                    externalDir = File(externalFile.path)
+                }
+            } else {
+                throw IllegalStateException("No support for Android Q")
+            }
+
+            externalDir.setReadable(true)
+            return externalDir
+        }
+
+        @JvmStatic
+        private fun isEmulator() = (Build.FINGERPRINT.startsWith("generic")
+                || Build.FINGERPRINT.startsWith("unknown")
+                || Build.MODEL.contains("google_sdk")
+                || Build.MODEL.contains("Emulator")
+                || Build.MODEL.contains("Android SDK built for x86")
+                || Build.MANUFACTURER.contains("Genymotion")
+                || Build.BRAND.startsWith("generic") && Build.DEVICE.startsWith("generic")
+                || "google_sdk" == Build.PRODUCT)
+    }
+
     override fun getRoot(): CloudPath {
         return PhonePath("/")
     }
 
     override suspend fun getFiles(path: CloudPath, callback: suspend (List<AbstractCloudFile>) -> Unit) {
-        callback(File(path.sanitizedPath).listFiles()!!.map {  it: File ->
-            PhoneFile(PhonePath(it.canonicalPath))
+        path as PhonePath
+
+        callback(path.toFile().listFiles()!!.map {  it: File ->
+            PhoneFile(it.toPhonePath())
         })
     }
 
     override suspend fun getFile(path: CloudPath, callback: suspend (AbstractCloudFile) -> Unit) {
-        callback(PhoneFile(PhonePath(File(path.sanitizedPath).canonicalPath)))
+        callback(PhoneFile(File(path.fullPath).toPhonePath()))
     }
 }
 
+fun File.toPhonePath(): PhonePath {
+    return PhonePath(this.canonicalPath.substringAfter(FALSE_ROOT))
+}
+
 class PhonePath(path: String) : CloudPath(path) {
-    private val falseRoot = getStartingFile().canonicalPath
-    override val scheme: String = falseRoot
+    override val scheme: String = FALSE_ROOT
 
     override fun createInstanceOfSubclass(path: String) = PhonePath(path)
 
-    private fun getStartingFile(): File {
-        lateinit var externalDir: File
-
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) {
-            if (isEmulator()) {
-                externalDir = File("/sdcard/")
-            } else {
-                val externalFile = Environment.getExternalStorageDirectory()
-                    ?: throw IOException("Failed to read files")
-                externalDir = File(externalFile.path)
-            }
-        } else {
-            throw IllegalStateException("No support for Android Q")
-        }
-
-        externalDir.setReadable(true)
-        return externalDir
-    }
-
-    private fun isEmulator() = (Build.FINGERPRINT.startsWith("generic")
-            || Build.FINGERPRINT.startsWith("unknown")
-            || Build.MODEL.contains("google_sdk")
-            || Build.MODEL.contains("Emulator")
-            || Build.MODEL.contains("Android SDK built for x86")
-            || Build.MANUFACTURER.contains("Genymotion")
-            || Build.BRAND.startsWith("generic") && Build.DEVICE.startsWith("generic")
-            || "google_sdk" == Build.PRODUCT)
+    fun toFile() = File(fullPath)
 }
 
 class PhoneUser : AbstractUser<PhoneDriver>() {
