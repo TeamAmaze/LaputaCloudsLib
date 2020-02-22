@@ -1,5 +1,8 @@
 package com.amaze.laputacloudslib
 
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import java.io.InputStream
 
 abstract class AbstractCloudFile {
@@ -19,6 +22,7 @@ abstract class AbstractCloudFile {
 }
 
 class DropBoxFile(
+    val driver: DropBoxDriver,
     override val path: DropBoxPath,
     override val isRootDirectory: Boolean,
     override val name: String,
@@ -28,6 +32,10 @@ class DropBoxFile(
         get() = TODO("not implemented") //To change initializer of created properties use File | Settings | File Templates.
 
     override fun getParent(callback: suspend (AbstractCloudFile?) -> Unit) {
+        CoroutineScope(Dispatchers.Main).launch {
+            //see https://www.dropboxforum.com/t5/API-Support-Feedback/Get-parent-folder/td-p/247874
+            driver.getFile(path.getParentFromPath(), callback)
+        }
     }
 
     override fun delete(callback: () -> Unit) {

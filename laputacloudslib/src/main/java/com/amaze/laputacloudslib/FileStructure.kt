@@ -35,6 +35,7 @@ class DropBoxDriver(val client: DbxClientV2) : AbstractFileStructureDriver() {
 
             while (true) {
                 fileList.addAll(result.entries.map { DropBoxFile(
+                    this@DropBoxDriver,
                     DropBoxPath(it.pathLower),
                     false,
                     it.name,
@@ -75,6 +76,7 @@ class DropBoxDriver(val client: DbxClientV2) : AbstractFileStructureDriver() {
 
             withContext(Dispatchers.Main) {
                 callback(DropBoxFile(
+                    this@DropBoxDriver,
                     DropBoxPath(rawPath),
                     rawPath == SEPARATOR,
                     name,
