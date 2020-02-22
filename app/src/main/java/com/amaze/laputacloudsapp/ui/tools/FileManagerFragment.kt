@@ -53,12 +53,8 @@ class FileManagerFragment : Fragment(), AdapterView.OnItemClickListener,
         cloudId = arguments!!.getInt(CLOUD_SELECTED_ARG)
         val account = getCloudAccount(cloudId)
 
-        lateinit var rootPath: String
-
         Clouds.init(account) { driver ->
-            rootPath = driver.SCHEME + "/"
-
-            driver.getFile(rootPath) { file ->
+            driver.getFile(driver.getRoot()) { file ->
                 fileManagerViewModel.selectedFile.value = file
             }
         }

@@ -1,40 +1,19 @@
 package com.amaze.laputacloudslib
 
-import androidx.annotation.VisibleForTesting
-import androidx.annotation.VisibleForTesting.PROTECTED
+import com.amaze.laputacloudslib.CloudPath.Companion.SEPARATOR
+import com.amaze.laputacloudslib.CloudPath.Companion.crashyCheckAgainst
 import com.dropbox.core.v2.DbxClientV2
-import com.dropbox.core.v2.files.Metadata
 import com.dropbox.core.v2.files.FolderMetadata
+import com.dropbox.core.v2.files.Metadata
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import java.io.File
 
 abstract class AbstractFileStructureDriver {
-    companion object {
-        val SEPARATOR = "/"
+    abstract fun getRoot(): CloudPath
 
-        @VisibleForTesting
-        fun removeScheme(path: String, scheme: String) = path.substringAfter(scheme)
+    abstract suspend fun getFiles(path: CloudPath, callback: suspend (List<AbstractCloudFile>) -> Unit)
 
-        @VisibleForTesting(otherwise = PROTECTED)
-        fun sanitizeRawPath(rawPath: String): String {
-            var rawPath = rawPath
-
-            if(!rawPath.startsWith(SEPARATOR)) {
-                rawPath = SEPARATOR + rawPath
-            }
-
-            return File(rawPath).canonicalPath
-        }
-    }
-
-    abstract val SCHEME: String
-
-    abstract suspend fun getFiles(path: String, callback: suspend (List<AbstractCloudFile>) -> Unit)
-
-    abstract suspend fun getFile(path: String, callback: suspend (AbstractCloudFile) -> Unit)
-
-    protected fun removeScheme(path: String) = removeScheme(path, SCHEME)
+    abstract suspend fun getFile(path: CloudPath, callback: suspend (AbstractCloudFile) -> Unit)
 }
 
 class DropBoxDriver(val client: DbxClientV2) : AbstractFileStructureDriver() {
@@ -42,19 +21,21 @@ class DropBoxDriver(val client: DbxClientV2) : AbstractFileStructureDriver() {
         const val SCHEME = "dropbox:"
     }
 
-    override val SCHEME: String =
-        Companion.SCHEME
+    override fun getRoot(): CloudPath {
+        return DropBoxPath("/")
+    }
 
-    override suspend fun getFiles(path: String, callback: suspend (List<AbstractCloudFile>) -> Unit) {
+    override suspend fun getFiles(path: CloudPath, callback: suspend (List<AbstractCloudFile>) -> Unit) {
+        crashyCheckAgainst<DropBoxPath>(path)
+
         withContext(Dispatchers.IO) {
-            val path = sanitizeRawPath(removeScheme(path))
-            var result = client.files().listFolder(if(path == SEPARATOR) "" else path)
+            var result = client.files().listFolder(if(path.sanitizedPath == SEPARATOR) "" else path.sanitizedPath)
 
             val fileList = mutableListOf<AbstractCloudFile>()
 
             while (true) {
                 fileList.addAll(result.entries.map { DropBoxFile(
-                    SCHEME + it.pathLower,
+                    DropBoxPath(it.pathLower),
                     false,
                     it.name,
                     it.isFolder()
@@ -73,27 +54,29 @@ class DropBoxDriver(val client: DbxClientV2) : AbstractFileStructureDriver() {
         }
     }
 
-    override suspend fun getFile(path: String, callback: suspend (AbstractCloudFile) -> Unit) {
+    override suspend fun getFile(path: CloudPath, callback: suspend (AbstractCloudFile) -> Unit) {
+        crashyCheckAgainst<DropBoxPath>(path)
+
         withContext(Dispatchers.IO) {
             val name: String
-            val schemedPath: String
+            val rawPath: String
             val isDirectory: Boolean
 
-            if (sanitizeRawPath(removeScheme(path)) != SEPARATOR) {//root folder has no metadata
-                val metadata = client.files().getMetadata(sanitizeRawPath(removeScheme(path)))
+            if (path.sanitizedPath != SEPARATOR) {//root folder has no metadata
+                val metadata = client.files().getMetadata(path.sanitizedPath)
                 name = metadata.name
-                schemedPath = SCHEME + metadata.pathLower
+                rawPath = metadata.pathLower
                 isDirectory = metadata.isFolder()
             } else {
                 name = "root"
-                schemedPath = "$SCHEME/"
+                rawPath = "/"
                 isDirectory = true
             }
 
             withContext(Dispatchers.Main) {
                 callback(DropBoxFile(
-                    schemedPath,
-                    removeScheme(schemedPath) == SEPARATOR,
+                    DropBoxPath(rawPath),
+                    rawPath == SEPARATOR,
                     name,
                     isDirectory))
             }

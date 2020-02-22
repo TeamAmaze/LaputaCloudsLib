@@ -5,24 +5,28 @@ import android.os.Environment
 import androidx.annotation.FloatRange
 import com.amaze.laputacloudslib.*
 import com.amaze.laputacloudslib.AbstractCloudCopyStatus
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import java.io.File
 import java.io.IOException
 import java.io.InputStream
 
 class PhoneFile(
-    private val falseRoot: String,
-    override val path: String
+    override val path: CloudPath
 ) : AbstractCloudFile() {
-    val file = File(path)
+    val file = File(path.sanitizedPath)
 
     override val name = file.name
     override val isDirectory = file.isDirectory
-    override val isRootDirectory = file.canonicalPath == falseRoot
+    override val isRootDirectory = path.sanitizedPath.isEmpty()
     override val byteSize = file.length()
 
-    override fun getParent(callback: (AbstractCloudFile?) -> Unit) {
+    override fun getParent(callback: suspend (AbstractCloudFile?) -> Unit) {
         val parentPath = file.parent
-        callback(if(parentPath == null) null else PhoneFile(falseRoot, parentPath))
+        CoroutineScope(Dispatchers.Main).launch {
+            callback(if (parentPath == null) null else PhoneFile(PhonePath(parentPath)))
+        }
     }
 
     override fun delete(callback: () -> Unit) {
@@ -63,7 +67,7 @@ class PhoneFile(
         folder as PhoneFile
 
         val targetFile = File(folder.file, newName)
-        callback(PhoneFile(falseRoot, targetFile.canonicalPath))
+        callback(PhoneFile(PhonePath(targetFile.canonicalPath)))
     }
 
     override fun download(callback: (InputStream) -> Unit) {
@@ -89,19 +93,26 @@ class PhoneFile(
 }
 
 class PhoneDriver : AbstractFileStructureDriver() {
-    private val falseRoot = getStartingFile().canonicalPath
-    override val SCHEME: String
-        = falseRoot
+    override fun getRoot(): CloudPath {
+        return PhonePath("/")
+    }
 
-    override suspend fun getFiles(path: String, callback: suspend (List<AbstractCloudFile>) -> Unit) {
-        callback(File(path).listFiles()!!.map {  it: File ->
-            PhoneFile(falseRoot, it.canonicalPath)
+    override suspend fun getFiles(path: CloudPath, callback: suspend (List<AbstractCloudFile>) -> Unit) {
+        callback(File(path.sanitizedPath).listFiles()!!.map {  it: File ->
+            PhoneFile(PhonePath(it.canonicalPath))
         })
     }
 
-    override suspend fun getFile(path: String, callback: suspend (AbstractCloudFile) -> Unit) {
-        callback(PhoneFile(falseRoot, File(path).canonicalPath))
+    override suspend fun getFile(path: CloudPath, callback: suspend (AbstractCloudFile) -> Unit) {
+        callback(PhoneFile(PhonePath(File(path.sanitizedPath).canonicalPath)))
     }
+}
+
+class PhonePath(path: String) : CloudPath(path) {
+    private val falseRoot = getStartingFile().canonicalPath
+    override val scheme: String = falseRoot
+
+    override fun createInstanceOfSubclass(path: String) = PhonePath(path)
 
     private fun getStartingFile(): File {
         lateinit var externalDir: File

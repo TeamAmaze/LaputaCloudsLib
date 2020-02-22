@@ -2,6 +2,10 @@ package com.amaze.laputacloudslib.onedrive
 
 import com.amaze.laputacloudslib.AbstractCloudFile
 import com.amaze.laputacloudslib.AbstractFileStructureDriver
+import com.amaze.laputacloudslib.CloudPath
+import com.amaze.laputacloudslib.CloudPath.Companion.SEPARATOR
+import com.amaze.laputacloudslib.CloudPath.Companion.crashyCheckAgainst
+import com.amaze.laputacloudslib.OneDrivePath
 import com.onedrive.sdk.extensions.IOneDriveClient
 
 class OneDriveDriver(val oneDriveClient: IOneDriveClient) : AbstractFileStructureDriver() {
@@ -9,40 +13,33 @@ class OneDriveDriver(val oneDriveClient: IOneDriveClient) : AbstractFileStructur
         const val SCHEME = "onedrive:"
     }
 
-    override val SCHEME: String =
-        Companion.SCHEME
+    override fun getRoot(): CloudPath {
+        return OneDrivePath("/")
+    }
 
-    override suspend fun getFiles(path: String, callback: suspend (List<AbstractCloudFile>) -> Unit) {
-        val rawPath =
-            sanitizeRawPath(
-                removeScheme(path)
-            )
-
-        oneDriveClient.drive.root.getItemWithPath(rawPath).children.buildRequest().get(
+    override suspend fun getFiles(path: CloudPath, callback: suspend (List<AbstractCloudFile>) -> Unit) {
+        oneDriveClient.drive.root.getItemWithPath(path.sanitizedPath).children.buildRequest().get(
             crashOnFailure { requestForFile ->
                 callback(requestForFile.currentPage.map {
                     OneDriveCloudFile(
                         this@OneDriveDriver,
-                        rawPath + SEPARATOR + it.name,
+                        path.join(it.name),
                         it
                     )
                 })
             })
     }
 
-    override suspend fun getFile(path: String, callback: suspend (AbstractCloudFile) -> Unit) {
-        val rawPath =
-            sanitizeRawPath(
-                removeScheme(path)
-            )
+    override suspend fun getFile(path: CloudPath, callback: suspend (AbstractCloudFile) -> Unit) {
+        crashyCheckAgainst<OneDrivePath>(path)
 
-        oneDriveClient.drive.root.getItemWithPath(rawPath).buildRequest().get(crashOnFailure { requestForFile ->
+        oneDriveClient.drive.root.getItemWithPath(path.sanitizedPath).buildRequest().get(crashOnFailure { requestForFile ->
             callback(
                 OneDriveCloudFile(
                     this@OneDriveDriver,
-                    rawPath,
+                    path as OneDrivePath,
                     requestForFile,
-                    isRootDirectory = rawPath == SEPARATOR
+                    isRootDirectory = path.sanitizedPath == SEPARATOR
                 )
             )
         })

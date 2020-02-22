@@ -4,18 +4,22 @@ import androidx.annotation.WorkerThread
 import com.amaze.laputacloudslib.AbstractCloudCopyStatus
 import com.amaze.laputacloudslib.AbstractCloudFile
 import com.amaze.laputacloudslib.AbstractFileStructureDriver
+import com.amaze.laputacloudslib.OneDrivePath
 import com.onedrive.sdk.concurrency.IProgressCallback
 import com.onedrive.sdk.core.ClientException
 import com.onedrive.sdk.extensions.ChunkedUploadSessionDescriptor
 import com.onedrive.sdk.extensions.Item
 import com.onedrive.sdk.extensions.ItemReference
 import com.onedrive.sdk.options.QueryOption
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import java.io.File
 import java.io.InputStream
 
 class OneDriveCloudFile(
     val driver: OneDriveDriver,
-    override val path: String,
+    override val path: OneDrivePath,
     val item: Item,
     override val isRootDirectory: Boolean = false
 ): AbstractCloudFile() {
@@ -27,30 +31,30 @@ class OneDriveCloudFile(
 
     override val byteSize = item.size
 
-    override fun getParent(callback: (AbstractCloudFile?) -> Unit) {
+    override fun getParent(callback: suspend (AbstractCloudFile?) -> Unit) {
         if(isRootDirectory) {
-            callback(null)
+            CoroutineScope(Dispatchers.Main).launch {
+                callback(null)
+            }
         }
 
-        val guessedParentPath = getParentFromPath(
-            path
-        )!!
+        val guessedParentPath = path.getParentFromPath<OneDrivePath>()
 
-        driver.oneDriveClient.drive.root.getItemWithPath(guessedParentPath).buildRequest().get(
+        driver.oneDriveClient.drive.root.getItemWithPath(guessedParentPath.sanitizedPath).buildRequest().get(
             crashOnFailure { result ->
                 callback(
                     OneDriveCloudFile(
                         driver,
                         guessedParentPath,
                         result,
-                        guessedParentPath == "/"
+                        guessedParentPath.sanitizedPath == "/"
                     )
                 )
             })
     }
 
     override fun delete(callback: () -> Unit) {
-        driver.oneDriveClient.drive.root.getItemWithPath(path).buildRequest().delete(
+        driver.oneDriveClient.drive.root.getItemWithPath(path.sanitizedPath).buildRequest().delete(
             crashOnFailure {
                 callback()
             })
@@ -140,7 +144,7 @@ class OneDriveCloudFile(
                     callback(
                         OneDriveCloudFile(
                             driver,
-                            path + AbstractFileStructureDriver.SEPARATOR + name,
+                            path.join(name),
                             it
                         )
                     )
@@ -158,9 +162,9 @@ class OneDriveCloudFile(
         size: Long,
         callback: (uploadedFile: AbstractCloudFile) -> Unit
     ) {
-        val fileCompletePath = path + AbstractFileStructureDriver.SEPARATOR + name
+        val fileCompletePath = path.join<OneDrivePath>(name)
 
-        driver.oneDriveClient.drive.root.getItemWithPath(path)
+        driver.oneDriveClient.drive.root.getItemWithPath(path.sanitizedPath)
             .getCreateSession(ChunkedUploadSessionDescriptor()).buildRequest().post()
             .createUploadProvider(
                 driver.oneDriveClient,
@@ -198,9 +202,6 @@ class OneDriveCloudFile(
     }
 
     companion object {
-        @JvmStatic
-        private fun getParentFromPath(path: String): String? = File(path).parent
-
         private fun Item.toItemReference() = ItemReference().also {
             //Error message: id and path in parentReference should not both be specified
             it.id = this.id
