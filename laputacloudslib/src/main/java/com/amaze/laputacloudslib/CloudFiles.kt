@@ -39,7 +39,13 @@ class DropBoxFile(
     }
 
     override fun delete(callback: () -> Unit) {
-        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+        CoroutineScope(Dispatchers.IO).launch {
+            driver.client.files().deleteV2(path.sanitizedPath)
+
+            CoroutineScope(Dispatchers.Main).launch {
+                callback()
+            }
+        }
     }
 
     override fun copyTo(
