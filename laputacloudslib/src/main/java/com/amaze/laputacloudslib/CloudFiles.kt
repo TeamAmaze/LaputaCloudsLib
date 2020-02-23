@@ -17,6 +17,9 @@ abstract class AbstractCloudFile {
     abstract fun delete(callback: () -> Unit)
     abstract fun copyTo(newName: String, folder: AbstractCloudFile, callback: (AbstractCloudFile) -> Unit)
     abstract fun moveTo(newName: String, folder: AbstractCloudFile, callback: (AbstractCloudFile) -> Unit)
+    /**
+     * You need to close the [InputStream] when not using it anymore
+     */
     abstract fun download(callback: (InputStream) -> Unit)
     abstract fun uploadHere(fileToUpload: AbstractCloudFile, callback: (uploadedFile: AbstractCloudFile) -> Unit)
     abstract fun uploadHere(inputStream: InputStream, name: String, size: Long, callback: (uploadedFile: AbstractCloudFile) -> Unit)
@@ -82,7 +85,13 @@ class DropBoxFile(
     }
 
     override fun download(callback: (InputStream) -> Unit) {
-        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+        CoroutineScope(Dispatchers.IO).launch {
+            val result = driver.client.files().download(path.sanitizedPath)
+
+            CoroutineScope(Dispatchers.Main).launch {
+                callback(result.inputStream)
+            }
+        }
     }
 
     override fun uploadHere(
