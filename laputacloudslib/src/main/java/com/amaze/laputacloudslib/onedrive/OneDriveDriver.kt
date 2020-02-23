@@ -1,11 +1,7 @@
 package com.amaze.laputacloudslib.onedrive
 
-import com.amaze.laputacloudslib.AbstractCloudFile
-import com.amaze.laputacloudslib.AbstractFileStructureDriver
-import com.amaze.laputacloudslib.CloudPath
-import com.amaze.laputacloudslib.CloudPath.Companion.SEPARATOR
-import com.amaze.laputacloudslib.CloudPath.Companion.crashyCheckAgainst
-import com.amaze.laputacloudslib.OneDrivePath
+import com.amaze.laputacloudslib.*
+import com.amaze.laputacloudslib.AbstractCloudPath.Companion.SEPARATOR
 import com.onedrive.sdk.extensions.IOneDriveClient
 
 class OneDriveDriver(val oneDriveClient: IOneDriveClient) : AbstractFileStructureDriver() {
@@ -23,7 +19,7 @@ class OneDriveDriver(val oneDriveClient: IOneDriveClient) : AbstractFileStructur
                 callback(requestForFile.currentPage.map {
                     OneDriveCloudFile(
                         this@OneDriveDriver,
-                        path.join(it.name),
+                        path.join(it.name) as OneDrivePath,
                         it
                     )
                 })
@@ -31,8 +27,6 @@ class OneDriveDriver(val oneDriveClient: IOneDriveClient) : AbstractFileStructur
     }
 
     override suspend fun getFile(path: CloudPath, callback: suspend (AbstractCloudFile) -> Unit) {
-        crashyCheckAgainst<OneDrivePath>(path)
-
         oneDriveClient.drive.root.getItemWithPath(path.sanitizedPath).buildRequest().get(crashOnFailure { requestForFile ->
             callback(
                 OneDriveCloudFile(

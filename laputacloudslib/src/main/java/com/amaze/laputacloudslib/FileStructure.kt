@@ -1,7 +1,6 @@
 package com.amaze.laputacloudslib
 
-import com.amaze.laputacloudslib.CloudPath.Companion.SEPARATOR
-import com.amaze.laputacloudslib.CloudPath.Companion.crashyCheckAgainst
+import com.amaze.laputacloudslib.AbstractCloudPath.Companion.SEPARATOR
 import com.dropbox.core.v2.DbxClientV2
 import com.dropbox.core.v2.files.FolderMetadata
 import com.dropbox.core.v2.files.Metadata
@@ -26,8 +25,6 @@ class DropBoxDriver(val client: DbxClientV2) : AbstractFileStructureDriver() {
     }
 
     override suspend fun getFiles(path: CloudPath, callback: suspend (List<AbstractCloudFile>) -> Unit) {
-        crashyCheckAgainst<DropBoxPath>(path)
-
         withContext(Dispatchers.IO) {
             var result = client.files().listFolder(if(path.sanitizedPath == SEPARATOR) "" else path.sanitizedPath)
 
@@ -56,8 +53,6 @@ class DropBoxDriver(val client: DbxClientV2) : AbstractFileStructureDriver() {
     }
 
     override suspend fun getFile(path: CloudPath, callback: suspend (AbstractCloudFile) -> Unit) {
-        crashyCheckAgainst<DropBoxPath>(path)
-
         withContext(Dispatchers.IO) {
             val name: String
             val rawPath: String

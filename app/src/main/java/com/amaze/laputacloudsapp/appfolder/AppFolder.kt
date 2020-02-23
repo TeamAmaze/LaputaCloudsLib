@@ -6,7 +6,7 @@ import androidx.annotation.FloatRange
 import com.amaze.laputacloudsapp.appfolder.PhoneDriver.Companion.FALSE_ROOT
 import com.amaze.laputacloudslib.*
 import com.amaze.laputacloudslib.AbstractCloudCopyStatus
-import com.amaze.laputacloudslib.CloudPath.Companion.SEPARATOR
+import com.amaze.laputacloudslib.AbstractCloudPath.Companion.SEPARATOR
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -150,7 +150,7 @@ fun File.toPhonePath(): PhonePath {
     return PhonePath(this.canonicalPath.substringAfter(FALSE_ROOT))
 }
 
-class PhonePath(path: String) : CloudPath(path) {
+class PhonePath(path: String) : AbstractCloudPath<PhonePath>(path) {
     override val scheme: String = FALSE_ROOT
 
     override fun createInstanceOfSubclass(path: String) = PhonePath(path)

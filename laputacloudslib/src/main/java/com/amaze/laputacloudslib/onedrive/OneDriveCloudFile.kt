@@ -38,7 +38,7 @@ class OneDriveCloudFile(
             }
         }
 
-        val guessedParentPath = path.getParentFromPath<OneDrivePath>()
+        val guessedParentPath = path.getParentFromPath()
 
         driver.oneDriveClient.drive.root.getItemWithPath(guessedParentPath.sanitizedPath).buildRequest().get(
             crashOnFailure { result ->
@@ -162,7 +162,7 @@ class OneDriveCloudFile(
         size: Long,
         callback: (uploadedFile: AbstractCloudFile) -> Unit
     ) {
-        val fileCompletePath = path.join<OneDrivePath>(name)
+        val fileCompletePath = path.join(name)
 
         driver.oneDriveClient.drive.root.getItemWithPath(path.sanitizedPath)
             .getCreateSession(ChunkedUploadSessionDescriptor()).buildRequest().post()
