@@ -2,10 +2,8 @@ package com.amaze.laputacloudsapp.appfolder
 
 import android.os.Build
 import android.os.Environment
-import androidx.annotation.FloatRange
 import com.amaze.laputacloudsapp.appfolder.PhoneDriver.Companion.FALSE_ROOT
 import com.amaze.laputacloudslib.*
-import com.amaze.laputacloudslib.AbstractCloudCopyStatus
 import com.amaze.laputacloudslib.AbstractCloudPath.Companion.SEPARATOR
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -42,7 +40,7 @@ class PhoneFile(
     override fun copyTo(
         newName: String,
         folder: AbstractCloudFile,
-        callback: (AbstractCloudCopyStatus) -> Unit
+        callback: (AbstractCloudFile) -> Unit
     ) {
         folder as PhoneFile
 
@@ -50,12 +48,7 @@ class PhoneFile(
 
         file.copyTo(targetFile)
 
-        callback(object : AbstractCloudCopyStatus() {
-            override fun getStatus() = DONE
-
-            @FloatRange(from = 0.0, to = 100.0)
-            override fun getPercentage(): Float = 100.0f
-        })
+        callback(PhoneFile(targetFile.toPhonePath()))
     }
 
     override fun moveTo(
@@ -63,13 +56,14 @@ class PhoneFile(
         folder: AbstractCloudFile,
         callback: (AbstractCloudFile) -> Unit
     ) {
-        copyTo(newName, folder, {})
-        file.delete()
+        copyTo(newName, folder) {
+            file.delete()
 
-        folder as PhoneFile
+            folder as PhoneFile
 
-        val targetFile = File(folder.file, newName)
-        callback(PhoneFile(targetFile.toPhonePath()))
+            val targetFile = File(folder.file, newName)
+            callback(PhoneFile(targetFile.toPhonePath()))
+        }
     }
 
     override fun download(callback: (InputStream) -> Unit) {

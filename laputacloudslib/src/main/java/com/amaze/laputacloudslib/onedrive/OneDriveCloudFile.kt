@@ -1,9 +1,7 @@
 package com.amaze.laputacloudslib.onedrive
 
 import androidx.annotation.WorkerThread
-import com.amaze.laputacloudslib.AbstractCloudCopyStatus
 import com.amaze.laputacloudslib.AbstractCloudFile
-import com.amaze.laputacloudslib.AbstractFileStructureDriver
 import com.amaze.laputacloudslib.OneDrivePath
 import com.onedrive.sdk.concurrency.IProgressCallback
 import com.onedrive.sdk.core.ClientException
@@ -14,7 +12,6 @@ import com.onedrive.sdk.options.QueryOption
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
-import java.io.File
 import java.io.InputStream
 
 class OneDriveCloudFile(
@@ -60,7 +57,35 @@ class OneDriveCloudFile(
             })
     }
 
-    override fun copyTo(newName: String, folder: AbstractCloudFile, callback: (AbstractCloudCopyStatus) -> Unit) {
+    override fun copyTo(newName: String, folder: AbstractCloudFile, callback: (AbstractCloudFile) -> Unit) {
+        folder as OneDriveCloudFile
+
+        val parentReferenceForFolder = folder.item.toItemReference()
+
+        driver.oneDriveClient.drive.getItems(item.id).getCopy(newName, parentReferenceForFolder).buildRequest().post(
+            crashOnFailure { asyncMonitor ->
+                asyncMonitor.pollForResult(750, object : IProgressCallback<Item> {
+                    override fun success(result: Item) {
+                        callback(OneDriveCloudFile(
+                            driver,
+                            folder.path.join(newName),
+                            result,
+                            false
+                        ))
+                    }
+
+                    override fun failure(ex: ClientException) {
+                        throw OneDriveIOException(ex)
+                    }
+
+                    override fun progress(current: Long, max: Long) = Unit
+
+                })
+            })
+    }
+
+    @Suppress("unused")
+    fun copyToWithStatus(newName: String, folder: AbstractCloudFile, callback: (OneDriveCopyStatus) -> Unit) {
         folder as OneDriveCloudFile
 
         val parentReferenceForFolder = folder.item.toItemReference()

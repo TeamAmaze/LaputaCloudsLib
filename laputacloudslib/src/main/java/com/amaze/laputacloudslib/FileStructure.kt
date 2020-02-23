@@ -1,6 +1,8 @@
 package com.amaze.laputacloudslib
 
 import com.amaze.laputacloudslib.AbstractCloudPath.Companion.SEPARATOR
+import com.amaze.laputacloudslib.dropbox.isFolder
+import com.amaze.laputacloudslib.dropbox.toDropBoxFile
 import com.dropbox.core.v2.DbxClientV2
 import com.dropbox.core.v2.files.FolderMetadata
 import com.dropbox.core.v2.files.Metadata
@@ -25,8 +27,10 @@ class DropBoxDriver(val client: DbxClientV2) : AbstractFileStructureDriver() {
     }
 
     override suspend fun getFiles(path: CloudPath, callback: suspend (List<AbstractCloudFile>) -> Unit) {
+        path as DropBoxPath
+
         withContext(Dispatchers.IO) {
-            var result = client.files().listFolder(if(path.sanitizedPath == SEPARATOR) "" else path.sanitizedPath)
+            var result = client.files().listFolder(path.sanitizedPathOrRoot)
 
             val fileList = mutableListOf<AbstractCloudFile>()
 
@@ -53,36 +57,25 @@ class DropBoxDriver(val client: DbxClientV2) : AbstractFileStructureDriver() {
     }
 
     override suspend fun getFile(path: CloudPath, callback: suspend (AbstractCloudFile) -> Unit) {
-        withContext(Dispatchers.IO) {
-            val name: String
-            val rawPath: String
-            val isDirectory: Boolean
+        path as DropBoxPath
 
-            if (path.sanitizedPath != SEPARATOR) {//root folder has no metadata
+        withContext(Dispatchers.IO) {
+            val file = if (path.sanitizedPathOrRoot.isNotEmpty()) {//root folder has no metadata
                 val metadata = client.files().getMetadata(path.sanitizedPath)
-                name = metadata.name
-                rawPath = metadata.pathLower
-                isDirectory = metadata.isFolder()
+                metadata.toDropBoxFile(this@DropBoxDriver)
             } else {
-                name = "root"
-                rawPath = "/"
-                isDirectory = true
+                DropBoxFile(
+                    this@DropBoxDriver,
+                    DropBoxPath("/"),
+                    true,
+                    "root",
+                    true)
             }
 
             withContext(Dispatchers.Main) {
-                callback(DropBoxFile(
-                    this@DropBoxDriver,
-                    DropBoxPath(rawPath),
-                    rawPath == SEPARATOR,
-                    name,
-                    isDirectory))
+                callback(file)
             }
         }
     }
-
-    private fun Metadata.isFolder(): Boolean {
-        return this is FolderMetadata //as per https://www.dropboxforum.com/t5/API-Support-Feedback/Finding-if-Metadata-is-for-file-or-folder/td-p/167606
-    }
-
 
 }

@@ -1,5 +1,6 @@
 package com.amaze.laputacloudslib
 
+import com.amaze.laputacloudslib.dropbox.toDropBoxFile
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -14,7 +15,7 @@ abstract class AbstractCloudFile {
 
     abstract fun getParent(callback: suspend (AbstractCloudFile?) -> Unit)
     abstract fun delete(callback: () -> Unit)
-    abstract fun copyTo(newName: String, folder: AbstractCloudFile, callback: (AbstractCloudCopyStatus) -> Unit)
+    abstract fun copyTo(newName: String, folder: AbstractCloudFile, callback: (AbstractCloudFile) -> Unit)
     abstract fun moveTo(newName: String, folder: AbstractCloudFile, callback: (AbstractCloudFile) -> Unit)
     abstract fun download(callback: (InputStream) -> Unit)
     abstract fun uploadHere(fileToUpload: AbstractCloudFile, callback: (uploadedFile: AbstractCloudFile) -> Unit)
@@ -40,7 +41,7 @@ class DropBoxFile(
 
     override fun delete(callback: () -> Unit) {
         CoroutineScope(Dispatchers.IO).launch {
-            driver.client.files().deleteV2(path.sanitizedPath)
+            driver.client.files().deleteV2(path.sanitizedPathOrRoot)
 
             CoroutineScope(Dispatchers.Main).launch {
                 callback()
@@ -51,9 +52,17 @@ class DropBoxFile(
     override fun copyTo(
         newName: String,
         folder: AbstractCloudFile,
-        callback: (AbstractCloudCopyStatus) -> Unit
+        callback: (AbstractCloudFile) -> Unit
     ) {
-        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+        folder as DropBoxFile
+
+        CoroutineScope(Dispatchers.IO).launch {
+            val result = driver.client.files().copyV2(path.sanitizedPathOrRoot, folder.path.join(newName).sanitizedPath)
+
+            CoroutineScope(Dispatchers.Main).launch {
+                callback(result.metadata.toDropBoxFile(driver))
+            }
+        }
     }
 
     override fun moveTo(
@@ -61,7 +70,15 @@ class DropBoxFile(
         folder: AbstractCloudFile,
         callback: (AbstractCloudFile) -> Unit
     ) {
-        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+        folder as DropBoxFile
+
+        CoroutineScope(Dispatchers.IO).launch {
+            val result = driver.client.files().moveV2(path.sanitizedPathOrRoot, folder.path.join(newName).sanitizedPath)
+
+            CoroutineScope(Dispatchers.Main).launch {
+                callback(result.metadata.toDropBoxFile(driver))
+            }
+        }
     }
 
     override fun download(callback: (InputStream) -> Unit) {
