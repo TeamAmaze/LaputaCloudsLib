@@ -12,6 +12,7 @@ import com.onedrive.sdk.options.QueryOption
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.io.InputStream
 
 class OneDriveCloudFile(
@@ -127,37 +128,39 @@ class OneDriveCloudFile(
         })
     }
 
-    @WorkerThread
     override fun uploadHere(
         fileToUpload: AbstractCloudFile,
+        onProgress: ((bytes: Long) -> Unit)?,
         callback: (uploadedFile: AbstractCloudFile) -> Unit
     ) {
         fileToUpload.download { inputStream ->
-            uploadHere(inputStream, fileToUpload.name, fileToUpload.byteSize, callback)
+            uploadHere(inputStream, fileToUpload.name, fileToUpload.byteSize, onProgress, callback)
         }
     }
 
-    @WorkerThread
     override fun uploadHere(
         inputStream: InputStream,
         name: String,
         size: Long,
+        onProgress: ((bytes: Long) -> Unit)?,
         callback: (uploadedFile: AbstractCloudFile) -> Unit
     ) {
-        if(size <= 3*1024*1024) {
-            uploadAsSmallFile(inputStream, name, callback)
-        } else if(size <= 150*1024*1024){
-            uploadAsBigFile(inputStream, name, size, callback)
-        } else {
-            throw UnsupportedOperationException("Size too big to transfer!")
+        CoroutineScope(Dispatchers.IO).launch {
+            if (size <= 3 * 1024 * 1024) {
+                uploadAsSmallFile(inputStream, name, callback)
+            } else if (size <= 150 * 1024 * 1024) {
+                uploadAsBigFile(inputStream, name, size, onProgress, callback)
+            } else {
+                throw UnsupportedOperationException("Size too big to transfer!")
+            }
         }
     }
 
-    fun uploadAsSmallFile(
+    suspend fun uploadAsSmallFile(
         inputStream: InputStream,
         name: String,
         callback: (uploadedFile: AbstractCloudFile) -> Unit
-    ) {
+    )= withContext(Dispatchers.IO) {
         driver.oneDriveClient.drive
             .getItems(item.id)
             .children
@@ -166,13 +169,15 @@ class OneDriveCloudFile(
             .buildRequest()
             .put(inputStream.readBytes(),
                 crashOnFailure {
-                    callback(
-                        OneDriveCloudFile(
-                            driver,
-                            path.join(name),
-                            it
+                    CoroutineScope(Dispatchers.Main).launch {
+                        callback(
+                            OneDriveCloudFile(
+                                driver,
+                                path.join(name),
+                                it
+                            )
                         )
-                    )
+                    }
                 })
     }
 
@@ -180,13 +185,13 @@ class OneDriveCloudFile(
      * File files in the range 3MB to 150MB
      * Uses a server side tracking system so that 4MB are transfered at a time
      */
-    @WorkerThread
-    fun uploadAsBigFile(
+    suspend fun uploadAsBigFile(
         inputStream: InputStream,
         name: String,
         size: Long,
+        onProgress: ((bytes: Long) -> Unit)?,
         callback: (uploadedFile: AbstractCloudFile) -> Unit
-    ) {
+    ) = withContext(Dispatchers.IO) {
         val fileCompletePath = path.join(name)
 
         driver.oneDriveClient.drive.root.getItemWithPath(path.sanitizedPath)
@@ -205,16 +210,20 @@ class OneDriveCloudFile(
                 ),
                 object :
                     IProgressCallback<Item> {
-                    override fun progress(current: Long, max: Long) = Unit
+                    override fun progress(current: Long, max: Long) {
+                        onProgress?.invoke(current)
+                    }
 
                     override fun success(result: Item) {
-                        callback(
-                            OneDriveCloudFile(
-                                driver,
-                                fileCompletePath,
-                                result
+                        CoroutineScope(Dispatchers.Main).launch {
+                            callback(
+                                OneDriveCloudFile(
+                                    driver,
+                                    fileCompletePath,
+                                    result
+                                )
                             )
-                        )
+                        }
                     }
 
                     override fun failure(ex: ClientException) {

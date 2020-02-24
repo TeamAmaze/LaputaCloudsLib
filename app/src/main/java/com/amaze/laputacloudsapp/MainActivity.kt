@@ -60,12 +60,18 @@ class MainActivity : AppCompatActivity() {
 
         uploadViewModel = ViewModelProviders.of(this).get(UploadViewModel::class.java)
 
-        uploadViewModel.events.observe(this, Observer<Event<String>> {
+        uploadViewModel.events.observe(this, Observer<Event<UploadViewModel.UploadEvent>> {
             val parentLayout: View = findViewById(android.R.id.content)
+            val content = it!!.peekContent()
 
-            when(it!!.peekContent()) {
+            when(content.type) {
                 UploadViewModel.UPLOAD_STARTED -> {
                     uploadingSnackbar = Snackbar.make(parentLayout, "Uploading...", Snackbar.LENGTH_INDEFINITE)
+                    uploadingSnackbar!!.show()
+                }
+                UploadViewModel.UPLOAD_PROGRESS -> {
+
+                    uploadingSnackbar = Snackbar.make(parentLayout, "Uploading... " + content.progress + "%", Snackbar.LENGTH_INDEFINITE)
                     uploadingSnackbar!!.show()
                 }
                 UploadViewModel.UPLOAD_ENDED -> {
@@ -82,40 +88,18 @@ class MainActivity : AppCompatActivity() {
 
         uploadViewModel.folderLiveData.observe(this, Observer<AbstractCloudFile> { folder ->
             uploadViewModel.setUploadStarted()
-            UploadFileTask(uploadViewModel, folder!!, uploadViewModel.fileToUpload!!).execute()
+            val size = uploadViewModel.fileToUpload!!.byteSize
+
+            folder.uploadHere(uploadViewModel.fileToUpload!!, {bytesUploaded: Long ->
+                uploadViewModel.setUploadProgressed(bytesUploaded / size.toFloat() * 100)
+            }) {
+                uploadViewModel.setUploadEnded()
+            }
         })
     }
 
     override fun onSupportNavigateUp(): Boolean {
         val navController = findNavController(R.id.nav_host_fragment)
         return navController.navigateUp(appBarConfiguration) || super.onSupportNavigateUp()
-    }
-
-    class UploadFileTask(
-        val uploadViewModel: UploadViewModel,
-        val folder: AbstractCloudFile,
-        val fileToUpload: AbstractCloudFile
-    ) : AsyncTask<Unit, Unit, AbstractCloudFile>() {
-
-        override fun doInBackground(vararg params: Unit?): AbstractCloudFile {
-            val handler = CoroutineExceptionHandler { _, exception ->
-                throw exception
-            }
-            return runBlocking(handler) {
-                suspendCancellableCoroutine<AbstractCloudFile> { cont ->
-                    try {
-                        folder.uploadHere(fileToUpload) {
-                            cont.resume(it)
-                        }
-                    } catch (e: OneDriveIOException) {
-                        cont.resumeWithException(e)
-                    }
-                }
-            }
-        }
-
-        override fun onPostExecute(result: AbstractCloudFile) {
-            uploadViewModel.setUploadEnded()
-        }
     }
 }

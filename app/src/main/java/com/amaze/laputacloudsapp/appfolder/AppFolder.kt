@@ -72,6 +72,7 @@ class PhoneFile(
 
     override fun uploadHere(
         fileToUpload: AbstractCloudFile,
+        onProgress: ((bytes: Long) -> Unit)?,
         callback: (uploadedFile: AbstractCloudFile) -> Unit
     ) {
         throw NotImplementedError("Use copyTo or moveTo")
@@ -81,6 +82,7 @@ class PhoneFile(
         inputStream: InputStream,
         name: String,
         size: Long,
+        onProgress: ((bytes: Long) -> Unit)?,
         callback: (uploadedFile: AbstractCloudFile) -> Unit
     ) {
         throw NotImplementedError("Use copyTo or moveTo")

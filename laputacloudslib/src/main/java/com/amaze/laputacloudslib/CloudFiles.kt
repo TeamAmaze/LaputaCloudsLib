@@ -27,12 +27,21 @@ abstract class AbstractCloudFile {
     abstract fun delete(callback: () -> Unit)
     abstract fun copyTo(newName: String, folder: AbstractCloudFile, callback: (AbstractCloudFile) -> Unit)
     abstract fun moveTo(newName: String, folder: AbstractCloudFile, callback: (AbstractCloudFile) -> Unit)
+
     /**
      * You need to close the [InputStream] when not using it anymore
      */
     abstract fun download(callback: (InputStream) -> Unit)
-    abstract fun uploadHere(fileToUpload: AbstractCloudFile, callback: (uploadedFile: AbstractCloudFile) -> Unit)
-    abstract fun uploadHere(inputStream: InputStream, name: String, size: Long, callback: (uploadedFile: AbstractCloudFile) -> Unit)
+
+    /**
+     * There is no guarantee that the [onProgress] function will be called
+     */
+    abstract fun uploadHere(fileToUpload: AbstractCloudFile, onProgress: ((bytes: Long) -> Unit)?, callback: (uploadedFile: AbstractCloudFile) -> Unit)
+
+    /**
+     * There is no guarantee that the [onProgress] function will be called
+     */
+    abstract fun uploadHere(inputStream: InputStream, name: String, size: Long, onProgress: ((bytes: Long) -> Unit)?, callback: (uploadedFile: AbstractCloudFile) -> Unit)
 }
 
 class DropBoxFile(
@@ -106,10 +115,11 @@ class DropBoxFile(
 
     override fun uploadHere(
         fileToUpload: AbstractCloudFile,
+        onProgress: ((bytes: Long) -> Unit)?,
         callback: (uploadedFile: AbstractCloudFile) -> Unit
     ) {
         fileToUpload.download { inputStream ->
-            uploadHere(inputStream, fileToUpload.name, fileToUpload.byteSize, callback)
+            uploadHere(inputStream, fileToUpload.name, fileToUpload.byteSize, onProgress, callback)
         }
     }
 
@@ -117,13 +127,14 @@ class DropBoxFile(
         inputStream: InputStream,
         name: String,
         size: Long,
+        onProgress: ((bytes: Long) -> Unit)?,
         callback: (uploadedFile: AbstractCloudFile) -> Unit
     ) {
         CoroutineScope(Dispatchers.IO).launch {
             if (size < 8 * 1024 * 1024) {
                 uploadAsSmallFile(inputStream, name, callback)
             } else {
-                uploadAsBigFile(inputStream, name, size, {}, callback)
+                uploadAsBigFile(inputStream, name, size, onProgress, callback)
             }
         }
     }
@@ -178,7 +189,9 @@ class DropBoxFile(
         val progressListener: IOUtil.ProgressListener = object : IOUtil.ProgressListener {
             var uploadedBytes: Long = 0
             override fun onProgress(l: Long) {
-                progressCallback?.invoke(l + uploadedBytes)
+                CoroutineScope(Dispatchers.Main).launch {
+                    progressCallback?.invoke(l + uploadedBytes)
+                }
                 if (l == CHUNKED_UPLOAD_CHUNK_SIZE) uploadedBytes += CHUNKED_UPLOAD_CHUNK_SIZE
             }
         }
@@ -202,7 +215,9 @@ class DropBoxFile(
                             .uploadAndFinish(fileStream, CHUNKED_UPLOAD_CHUNK_SIZE, progressListener)
                             .sessionId
                         uploaded += CHUNKED_UPLOAD_CHUNK_SIZE
-                        progressCallback?.invoke(uploaded)
+                        withContext(Dispatchers.Main) {
+                            progressCallback?.invoke(uploaded)
+                        }
                     }
                     var cursor = UploadSessionCursor(sessionId, uploaded)
                     // (2) Append
@@ -210,7 +225,9 @@ class DropBoxFile(
                         dbxClient.files().uploadSessionAppendV2(cursor)
                             .uploadAndFinish(fileStream, CHUNKED_UPLOAD_CHUNK_SIZE, progressListener)
                         uploaded += CHUNKED_UPLOAD_CHUNK_SIZE
-                        progressCallback?.invoke(uploaded)
+                        withContext(Dispatchers.Main) {
+                            progressCallback?.invoke(uploaded)
+                        }
                         cursor = UploadSessionCursor(sessionId, uploaded)
                     }
                     // (3) Finish
