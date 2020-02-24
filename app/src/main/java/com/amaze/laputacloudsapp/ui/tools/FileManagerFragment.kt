@@ -15,10 +15,8 @@ import com.amaze.laputacloudsapp.ui.tools.dialogs.FileActionsDialogFragment
 import com.amaze.laputacloudslib.AbstractAccount
 import com.amaze.laputacloudslib.AbstractCloudFile
 import com.amaze.laputacloudslib.Clouds
-import com.amaze.laputacloudslib.DropBoxAccount
+import com.amaze.laputacloudslib.dropbox.DropBoxAccount
 import com.amaze.laputacloudslib.onedrive.OneDriveAccount
-import kotlinx.coroutines.GlobalScope
-import kotlinx.coroutines.launch
 
 class FileManagerFragment : Fragment(), AdapterView.OnItemClickListener,
     AdapterView.OnItemLongClickListener {

@@ -1,7 +1,6 @@
 package com.amaze.laputacloudslib
 
 import androidx.annotation.VisibleForTesting
-import com.amaze.laputacloudslib.onedrive.OneDriveDriver
 import java.io.File
 
 interface CloudPath {
@@ -46,24 +45,4 @@ abstract class AbstractCloudPath<Path: AbstractCloudPath<Path>>(path: String): C
             = createInstanceOfSubclass(sanitizedPath + SEPARATOR + fileName)
 
     abstract fun createInstanceOfSubclass(path: String): Path
-}
-
-class OneDrivePath(path: String) : AbstractCloudPath<OneDrivePath>(path) {
-    override val scheme: String = OneDriveDriver.SCHEME
-
-    override fun createInstanceOfSubclass(path: String): OneDrivePath {
-        return OneDrivePath(path)
-    }
-}
-
-class DropBoxPath(path: String) : AbstractCloudPath<DropBoxPath>(path) {
-    override val scheme: String = DropBoxDriver.SCHEME
-
-    val sanitizedPathOrRoot: String
-        get() = if(super.sanitizedPath == SEPARATOR) "" //For root
-                else super.sanitizedPath
-
-    override fun createInstanceOfSubclass(path: String): DropBoxPath {
-        return DropBoxPath(path)
-    }
 }

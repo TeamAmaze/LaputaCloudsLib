@@ -1,8 +1,6 @@
 package com.amaze.laputacloudslib.onedrive
 
-import androidx.annotation.WorkerThread
 import com.amaze.laputacloudslib.AbstractCloudFile
-import com.amaze.laputacloudslib.OneDrivePath
 import com.onedrive.sdk.concurrency.IProgressCallback
 import com.onedrive.sdk.core.ClientException
 import com.onedrive.sdk.extensions.ChunkedUploadSessionDescriptor

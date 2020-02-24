@@ -1,8 +1,5 @@
 package com.amaze.laputacloudslib.dropbox
 
-import com.amaze.laputacloudslib.DropBoxDriver
-import com.amaze.laputacloudslib.DropBoxFile
-import com.amaze.laputacloudslib.DropBoxPath
 import com.dropbox.core.v2.files.FolderMetadata
 import com.dropbox.core.v2.files.Metadata
 
@@ -12,5 +9,8 @@ fun Metadata.isFolder(): Boolean {
 }
 
 fun Metadata.toDropBoxFile(driver: DropBoxDriver): DropBoxFile {
-    return DropBoxFile(driver, DropBoxPath(pathLower), false, name, isFolder())
+    return DropBoxFile(
+        driver,
+        DropBoxPath(pathLower), false, name, isFolder()
+    )
 }
