@@ -53,6 +53,10 @@ dependencies {
     implementation 'com.google.apis:google-api-services-drive:v3-rev20191108-1.30.8'
 
 
+    //Box
+    implementation 'com.box:box-java-sdk:2.32.0'
+
+
 
     testImplementation 'junit:junit:4.12'
 
