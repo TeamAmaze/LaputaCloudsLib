@@ -46,3 +46,9 @@ abstract class AbstractCloudPath<Path: AbstractCloudPath<Path>>(path: String): C
 
     abstract fun createInstanceOfSubclass(path: String): Path
 }
+
+class BoxPath(path: String) : AbstractCloudPath<BoxPath>(path) {
+    override val scheme: String = "box:"
+
+    override fun createInstanceOfSubclass(path: String): BoxPath = BoxPath(path)
+}

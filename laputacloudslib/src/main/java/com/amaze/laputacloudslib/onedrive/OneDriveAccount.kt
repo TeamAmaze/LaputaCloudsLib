@@ -3,7 +3,6 @@ package com.amaze.laputacloudslib.onedrive
 import android.app.Activity
 import com.amaze.laputacloudslib.AbstractAccount
 import com.amaze.laputacloudslib.AbstractFileStructureDriver
-import com.amaze.laputacloudslib.AbstractUser
 import com.onedrive.sdk.authentication.ADALAuthenticator
 import com.onedrive.sdk.authentication.MSAAuthenticator
 import com.onedrive.sdk.concurrency.ICallback
@@ -39,7 +38,7 @@ class OneDriveAccount(
         override fun getRedirectUrl() = redirectionUri
     }
 
-    override suspend fun tryLogInAsync(callback: suspend (AbstractUser<out AbstractFileStructureDriver>) -> Unit) {
+    override suspend fun tryLogInAsync(callback: suspend (AbstractFileStructureDriver) -> Unit) {
         val oneDriveConfig: IClientConfig =
             if(msaaClientId != null && redirectionUri != null && adalClientId != null) {
                 DefaultClientConfig.createWithAuthenticators(
@@ -68,7 +67,7 @@ class OneDriveAccount(
                     ICallback<IOneDriveClient> {
                     override fun success(oneDriveClient: IOneDriveClient) {
                         CoroutineScope(Dispatchers.Main).launch {
-                            callback(OneDriveUser(oneDriveClient))
+                            callback(OneDriveDriver(oneDriveClient))
                         }
 
                     }

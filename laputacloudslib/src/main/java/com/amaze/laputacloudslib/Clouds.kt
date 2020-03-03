@@ -12,10 +12,8 @@ object Clouds {
         callback: suspend (AbstractFileStructureDriver) -> Unit
     ) {
         CoroutineScope(Dispatchers.Main).launch {
-            account.tryLogInAsync { user ->
-                user.getFileStructureDriverAsync { fileStructureDriver ->
-                    callback(fileStructureDriver)
-                }
+            account.tryLogInAsync { driver ->
+                callback(driver)
             }
         }
     }

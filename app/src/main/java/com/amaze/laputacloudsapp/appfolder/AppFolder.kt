@@ -154,14 +154,8 @@ class PhonePath(path: String) : AbstractCloudPath<PhonePath>(path) {
     fun toFile() = File(fullPath)
 }
 
-class PhoneUser : AbstractUser<PhoneDriver>() {
-    override suspend fun getFileStructureDriverAsync(callback: suspend (PhoneDriver) -> Unit) {
-        callback(PhoneDriver())
-    }
-}
-
 class PhoneAccount : AbstractAccount() {
-    override suspend fun tryLogInAsync(callback: suspend (AbstractUser<out AbstractFileStructureDriver>) -> Unit) {
-        callback(PhoneUser())
+    override suspend fun tryLogInAsync(callback: suspend (AbstractFileStructureDriver) -> Unit) {
+        callback(PhoneDriver())
     }
 }
