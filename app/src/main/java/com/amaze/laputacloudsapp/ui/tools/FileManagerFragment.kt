@@ -8,6 +8,7 @@ import android.widget.ListView
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.Observer
 import androidx.lifecycle.ViewModelProviders
+import androidx.navigation.fragment.findNavController
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout
 import com.amaze.laputacloudsapp.*
 import com.amaze.laputacloudsapp.appfolder.PhoneAccount
@@ -15,7 +16,9 @@ import com.amaze.laputacloudsapp.ui.tools.dialogs.FileActionsDialogFragment
 import com.amaze.laputacloudslib.AbstractAccount
 import com.amaze.laputacloudslib.AbstractCloudFile
 import com.amaze.laputacloudslib.Clouds
+import com.amaze.laputacloudslib.GoogleAccount
 import com.amaze.laputacloudslib.dropbox.DropBoxAccount
+import com.amaze.laputacloudslib.googledrive.AuthorizerFragmentData
 import com.amaze.laputacloudslib.onedrive.OneDriveAccount
 
 class FileManagerFragment : Fragment(), AdapterView.OnItemClickListener,
@@ -25,6 +28,7 @@ class FileManagerFragment : Fragment(), AdapterView.OnItemClickListener,
         const val CLOUD_SELECTED_ARG = "cloudName"
 
         const val ACCOUNT_PHONE = -1
+        const val ACCOUNT_GOOGLEDRIVE = 0
         const val ACCOUNT_ONEDRIVE = 1
         const val ACCOUNT_DROPBOX = 2
     }
@@ -199,6 +203,14 @@ class FileManagerFragment : Fragment(), AdapterView.OnItemClickListener,
         ACCOUNT_DROPBOX -> DropBoxAccount(
             accessToken
         )
+        ACCOUNT_GOOGLEDRIVE -> GoogleAccount(
+            "sampleApp",
+            clientId,
+            apiKey
+        ) {
+            val action = FileManagerFragmentDirections.actionNavGdriveToNavGoogleauth(it)
+            findNavController().navigate(action)
+        }
         else -> throw IllegalArgumentException()
     }
 

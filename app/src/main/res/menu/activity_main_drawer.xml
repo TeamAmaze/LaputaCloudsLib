@@ -18,8 +18,7 @@
                 <item
                     android:id="@+id/nav_gdrive"
                     android:icon="@drawable/ic_cloud_black_24dp"
-                    android:title="@string/google_drive"
-                    android:enabled="false"/>
+                    android:title="@string/google_drive" />
                 <item
                     android:id="@+id/nav_onedrive"
                     android:icon="@drawable/ic_cloud_black_24dp"
