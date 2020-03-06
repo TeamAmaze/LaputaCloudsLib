@@ -39,8 +39,7 @@ dependencies {
     }
 
     // Include the gson dependency
-    implementation 'com.google.code.gson:gson:2.3.1'
-//Beware when updating this dependency OneDrive might break
+    implementation 'com.google.code.gson:gson:2.3.1'//Beware when updating this dependency OneDrive might break
 
     implementation 'com.microsoft.services.msa:msa-auth:0.8.4'
     implementation 'com.microsoft.aad:adal:1.1.7'
@@ -55,7 +54,7 @@ dependencies {
 
 
     //Box
-    implementation 'com.box:box-java-sdk:2.32.0'
+    api 'com.box:box-android-sdk:4.2.3'
 
 
     implementation 'androidx.legacy:legacy-support-v4:1.0.0'

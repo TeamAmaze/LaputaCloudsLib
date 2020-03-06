@@ -1,28 +1,66 @@
 package com.amaze.laputacloudslib
 
+import android.content.Context
 import com.amaze.laputacloudslib.googledrive.AuthorizerFragmentData
-import com.box.sdk.BoxAPIConnection
+import com.box.androidsdk.content.BoxApiFile
+import com.box.androidsdk.content.BoxApiFolder
+import com.box.androidsdk.content.BoxConfig
+import com.box.androidsdk.content.auth.BoxAuthentication
+import com.box.androidsdk.content.models.BoxSession
 import com.google.api.client.auth.oauth2.Credential
 import com.google.api.services.drive.Drive
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import java.lang.Exception
 
 abstract class AbstractAccount {
     abstract suspend fun tryLogInAsync(callback: suspend (AbstractFileStructureDriver) -> Unit)
 }
 
-class BoxAccount : AbstractAccount {
+class BoxAccount(
+    private val context: Context,
+    clientId: String,
+    clientSecret: String
+) : AbstractAccount(), BoxAuthentication.AuthListener {
 
-    val api: BoxAPIConnection
-
-    constructor(clientId: String, clientSecret: String, authCode: String) : super() {
-        api = BoxAPIConnection(clientId, clientSecret, authCode)
+    init {
+        BoxConfig.CLIENT_ID = clientId
+        BoxConfig.CLIENT_SECRET = clientSecret
     }
 
-    constructor(developerToken: String) : super() {
-        api = BoxAPIConnection(developerToken)
+    val session = BoxSession(context).also {
+        it.setSessionAuthListener(this)
     }
+
+    lateinit var callback: suspend (AbstractFileStructureDriver) -> Unit
 
     override suspend fun tryLogInAsync(callback: suspend (AbstractFileStructureDriver) -> Unit) {
-        callback(BoxDriver(api))
+        this.callback = callback
+
+        session.authenticate(context)
+    }
+
+    override fun onLoggedOut(info: BoxAuthentication.BoxAuthenticationInfo?, ex: Exception?) {
+        TODO("Not yet implemented")
+    }
+
+    override fun onAuthCreated(info: BoxAuthentication.BoxAuthenticationInfo?) {
+        val folderApi = BoxApiFolder(session)
+        val fileApi = BoxApiFile(session)
+
+        CoroutineScope(Dispatchers.Main).launch {
+            callback(BoxDriver(folderApi, fileApi))
+        }
+    }
+
+    override fun onRefreshed(info: BoxAuthentication.BoxAuthenticationInfo?) {
+        TODO("Not yet implemented")
+    }
+
+    override fun onAuthFailure(info: BoxAuthentication.BoxAuthenticationInfo?, ex: Exception?) {
+        TODO("Not yet implemented")
     }
 }
 

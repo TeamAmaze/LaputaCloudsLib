@@ -1,7 +1,8 @@
 package com.amaze.laputacloudslib
 
-import com.box.sdk.BoxAPIConnection
-import com.box.sdk.BoxFolder
+import com.box.androidsdk.content.BoxApiFile
+import com.box.androidsdk.content.BoxApiFolder
+import com.box.androidsdk.content.BoxConstants
 
 abstract class AbstractFileStructureDriver {
     abstract fun getRoot(): CloudPath
@@ -11,7 +12,10 @@ abstract class AbstractFileStructureDriver {
     abstract suspend fun getFile(path: CloudPath, callback: suspend (AbstractCloudFile) -> Unit)
 }
 
-class BoxDriver(private val api: BoxAPIConnection) : AbstractFileStructureDriver() {
+class BoxDriver(
+    private val folderApi: BoxApiFolder,
+    private val fileApi: BoxApiFile
+) : AbstractFileStructureDriver() {
     override fun getRoot(): CloudPath = BoxPath("/")
 
     override suspend fun getFiles(
@@ -19,7 +23,7 @@ class BoxDriver(private val api: BoxAPIConnection) : AbstractFileStructureDriver
         callback: suspend (List<AbstractCloudFile>) -> Unit
     ) {
 
-        val rootFolder = BoxFolder.getRootFolder(api)
+        val rootFolder = folderApi.getItemsRequest(BoxConstants.ROOT_FOLDER_ID)
     }
 
     override suspend fun getFile(path: CloudPath, callback: suspend (AbstractCloudFile) -> Unit) {
