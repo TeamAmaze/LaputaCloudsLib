@@ -15,6 +15,7 @@ import com.amaze.laputacloudsapp.appfolder.PhoneAccount
 import com.amaze.laputacloudsapp.ui.tools.dialogs.FileActionsDialogFragment
 import com.amaze.laputacloudslib.AbstractAccount
 import com.amaze.laputacloudslib.AbstractCloudFile
+import com.amaze.laputacloudslib.BoxAccount
 import com.amaze.laputacloudslib.Clouds
 import com.amaze.laputacloudslib.GoogleAccount
 import com.amaze.laputacloudslib.dropbox.DropBoxAccount
@@ -31,6 +32,7 @@ class FileManagerFragment : Fragment(), AdapterView.OnItemClickListener,
         const val ACCOUNT_GOOGLEDRIVE = 0
         const val ACCOUNT_ONEDRIVE = 1
         const val ACCOUNT_DROPBOX = 2
+        const val ACCOUNT_BOX = 4
     }
 
     lateinit var fileManagerViewModel: FileManagerViewModel
@@ -196,21 +198,26 @@ class FileManagerFragment : Fragment(), AdapterView.OnItemClickListener,
         ACCOUNT_PHONE -> PhoneAccount()
         ACCOUNT_ONEDRIVE -> OneDriveAccount(
             requireActivity(),
-            MSAAClientId,
-            redirectionUri,
+            HiddenConstants.OneDrive.MSAAClientId,
+            HiddenConstants.OneDrive.redirectionUri,
             null
         )
         ACCOUNT_DROPBOX -> DropBoxAccount(
-            accessToken
+            HiddenConstants.DropBox.accessToken
         )
         ACCOUNT_GOOGLEDRIVE -> GoogleAccount(
             "sampleApp",
-            clientId,
-            apiKey
+            HiddenConstants.GoogleDrive.clientId,
+            HiddenConstants.GoogleDrive.apiKey
         ) {
             val action = FileManagerFragmentDirections.actionNavGdriveToNavGoogleauth(it)
             findNavController().navigate(action)
         }
+        ACCOUNT_BOX -> BoxAccount(
+            requireContext(),
+            HiddenConstants.Box.clientId,
+            HiddenConstants.Box.clientSecret
+        )
         else -> throw IllegalArgumentException()
     }
 

@@ -20,9 +20,8 @@ class DropBoxFile(
         get() = TODO("not implemented") //To change initializer of created properties use File | Settings | File Templates.
 
     override fun getParent(callback: suspend (AbstractCloudFile?) -> Unit) {
-        CoroutineScope(Dispatchers.Main)
-            .launch {
-            //see https://www.dropboxforum.com/t5/API-Support-Feedback/Get-parent-folder/td-p/247874
+        CoroutineScope(Dispatchers.Main).launch {
+            path as DropBoxPath
             driver.getFile(path.getParentFromPath(), callback)
         }
     }

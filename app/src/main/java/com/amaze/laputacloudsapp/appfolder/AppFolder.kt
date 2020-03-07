@@ -149,8 +149,6 @@ fun File.toPhonePath(): PhonePath {
 class PhonePath(path: String) : AbstractCloudPath<PhonePath>(path) {
     override val scheme: String = FALSE_ROOT
 
-    override fun createInstanceOfSubclass(path: String) = PhonePath(path)
-
     fun toFile() = File(fullPath)
 }
 

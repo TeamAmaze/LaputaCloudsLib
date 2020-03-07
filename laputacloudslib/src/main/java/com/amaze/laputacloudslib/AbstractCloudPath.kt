@@ -9,10 +9,6 @@ interface CloudPath {
     val sanitizedPath: String
 
     val fullPath: String
-
-    fun getParentFromPath(): CloudPath
-
-    fun join(fileName: String): CloudPath
 }
 
 abstract class AbstractCloudPath<Path: AbstractCloudPath<Path>>(path: String): CloudPath {
@@ -37,18 +33,12 @@ abstract class AbstractCloudPath<Path: AbstractCloudPath<Path>>(path: String): C
 
     override val fullPath: String
             get() = scheme + sanitizedPath
-
-    override fun getParentFromPath(): Path
-            = createInstanceOfSubclass(File(sanitizedPath).parent!!)
-
-    override fun join(fileName: String): Path
-            = createInstanceOfSubclass(sanitizedPath + SEPARATOR + fileName)
-
-    abstract fun createInstanceOfSubclass(path: String): Path
 }
 
-class BoxPath(path: String) : AbstractCloudPath<BoxPath>(path) {
+class BoxPath(val id: String, val isDirectory: Boolean = false, val isRoot: Boolean = false) : CloudPath {
     override val scheme: String = "box:"
 
-    override fun createInstanceOfSubclass(path: String): BoxPath = BoxPath(path)
+    override val sanitizedPath = id
+
+    override val fullPath: String = scheme + id
 }

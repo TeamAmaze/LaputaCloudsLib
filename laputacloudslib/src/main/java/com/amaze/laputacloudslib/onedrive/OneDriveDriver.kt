@@ -14,6 +14,8 @@ class OneDriveDriver(val oneDriveClient: IOneDriveClient) : AbstractFileStructur
     }
 
     override suspend fun getFiles(path: CloudPath, callback: suspend (List<AbstractCloudFile>) -> Unit) {
+        path as OneDrivePath
+
         oneDriveClient.drive.root.getItemWithPath(path.sanitizedPath).children.buildRequest().get(
             crashOnFailure { requestForFile ->
                 callback(requestForFile.currentPage.map {
@@ -27,11 +29,13 @@ class OneDriveDriver(val oneDriveClient: IOneDriveClient) : AbstractFileStructur
     }
 
     override suspend fun getFile(path: CloudPath, callback: suspend (AbstractCloudFile) -> Unit) {
+        path as OneDrivePath
+
         oneDriveClient.drive.root.getItemWithPath(path.sanitizedPath).buildRequest().get(crashOnFailure { requestForFile ->
             callback(
                 OneDriveCloudFile(
                     this@OneDriveDriver,
-                    path as OneDrivePath,
+                    path,
                     requestForFile,
                     isRootDirectory = path.sanitizedPath == SEPARATOR
                 )

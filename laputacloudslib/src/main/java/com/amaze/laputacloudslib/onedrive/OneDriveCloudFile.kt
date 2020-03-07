@@ -28,6 +28,8 @@ class OneDriveCloudFile(
     override val byteSize = item.size
 
     override fun getParent(callback: suspend (AbstractCloudFile?) -> Unit) {
+        path as OneDrivePath
+
         if(isRootDirectory) {
             CoroutineScope(Dispatchers.Main).launch {
                 callback(null)
