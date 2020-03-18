@@ -1,6 +1,7 @@
 apply plugin: 'com.android.library'
 apply plugin: 'kotlin-android'
 apply plugin: 'kotlin-android-extensions'
+
 android {
     compileSdkVersion 29
     buildToolsVersion "29.0.2"
@@ -18,11 +19,24 @@ android {
 
     buildTypes {
         release {
+            minifyEnabled true
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+        }
+        debug {
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
         }
     }
 
+    flavorDimensions "version"
+    productFlavors {
+        foss {
+            dimension "version"
+        }
+        nonFoss {
+            dimension "version"
+        }
+    }
 }
 
 dependencies {
@@ -39,8 +53,7 @@ dependencies {
     }
 
     // Include the gson dependency
-    implementation 'com.google.code.gson:gson:2.3.1'
-//Beware when updating this dependency OneDrive might break
+    implementation 'com.google.code.gson:gson:2.3.1'//Beware when updating this dependency OneDrive might break
 
     implementation 'com.microsoft.services.msa:msa-auth:0.8.4'
     implementation 'com.microsoft.aad:adal:1.1.7'
@@ -51,7 +64,7 @@ dependencies {
 
 
     //GoogleDrive
-    implementation 'com.google.apis:google-api-services-drive:v3-rev20191108-1.30.8'
+    fossImplementation 'com.google.apis:google-api-services-drive:v3-rev20191108-1.30.8'
 
 
     //Box
