@@ -1,3 +1,4 @@
 <resources>
     <string name="app_name">Laputa Clouds Lib</string>
+    <string name="title_activity_google_drive_oauth">GoogleDriveOAuthActivity</string>
 </resources>

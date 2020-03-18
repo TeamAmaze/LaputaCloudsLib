@@ -206,13 +206,11 @@ class FileManagerFragment : Fragment(), AdapterView.OnItemClickListener,
             HiddenConstants.DropBox.accessToken
         )
         ACCOUNT_GOOGLEDRIVE -> GoogleAccount(
+            requireContext(),
             "sampleApp",
             HiddenConstants.GoogleDrive.clientId,
-            HiddenConstants.GoogleDrive.apiKey
-        ) {
-            val action = FileManagerFragmentDirections.actionNavGdriveToNavGoogleauth(it)
-            findNavController().navigate(action)
-        }
+            ""
+        )
         ACCOUNT_BOX -> BoxAccount(
             requireContext(),
             HiddenConstants.Box.clientId,

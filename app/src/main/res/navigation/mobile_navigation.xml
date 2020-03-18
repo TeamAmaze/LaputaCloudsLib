@@ -6,20 +6,6 @@
     app:startDestination="@+id/nav_home">
 
     <fragment
-        android:id="@+id/nav_googleauth"
-        android:name="com.amaze.laputacloudslib.googledrive.AuthorizerFragment"
-        android:label="@string/file_actions">
-        <argument
-            android:name="data"
-            app:argType="com.amaze.laputacloudslib.googledrive.AuthorizerFragmentData"
-            app:nullable="false"/>
-
-        <action
-            android:id="@+id/action_nav_googleauth_to_nav_gdrive"
-            app:destination="@id/nav_gdrive" />
-    </fragment>
-
-    <fragment
         android:id="@+id/dialog_fileactions"
         android:name="com.amaze.laputacloudsapp.ui.tools.dialogs.FileActionsDialogFragment"
         android:label="@string/file_actions"/>
@@ -74,9 +60,6 @@
             android:name="cloudName"
             app:argType="integer"
             android:defaultValue="0" />
-        <action
-            android:id="@+id/action_nav_gdrive_to_nav_googleauth"
-            app:destination="@id/nav_googleauth" />
     </fragment>
 
     <fragment

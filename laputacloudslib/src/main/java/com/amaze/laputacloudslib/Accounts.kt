@@ -1,7 +1,9 @@
 package com.amaze.laputacloudslib
 
 import android.content.Context
+import android.content.Intent
 import com.amaze.laputacloudslib.googledrive.AuthorizerFragmentData
+import com.amaze.laputacloudslib.googledrive.GoogleDriveOAuthActivity
 import com.box.androidsdk.content.BoxApiFile
 import com.box.androidsdk.content.BoxApiFolder
 import com.box.androidsdk.content.BoxConfig
@@ -12,8 +14,6 @@ import com.google.api.services.drive.Drive
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
-import java.lang.Exception
 
 abstract class AbstractAccount {
     abstract suspend fun tryLogInAsync(callback: suspend (AbstractFileStructureDriver) -> Unit)
@@ -70,10 +70,10 @@ class BoxAccount(
  * blank, the application will log a warning. Suggested format is "MyCompany-ProductName/1.0".
  */
 class GoogleAccount(
+    val context: Context,
     val applicationName: String?,
     val clientId: String,
-    val apiKey: String,
-    val openInBrowser: (AuthorizerFragmentData) -> Unit
+    val redirectUrl: String
 ) : AbstractAccount() {
     private val drive: Drive? = null
 
@@ -85,6 +85,9 @@ class GoogleAccount(
             //    .build()
         }
 
-        openInBrowser(AuthorizerFragmentData(clientId, apiKey))
+        val intent = Intent(context, GoogleDriveOAuthActivity::class.java)
+        intent.putExtra(GoogleDriveOAuthActivity.AUTH_DATA, AuthorizerFragmentData(clientId, redirectUrl))
+        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        context.startActivity(intent)
     }
 }
