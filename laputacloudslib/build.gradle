@@ -53,7 +53,8 @@ dependencies {
     }
 
     // Include the gson dependency
-    implementation 'com.google.code.gson:gson:2.3.1'//Beware when updating this dependency OneDrive might break
+    implementation 'com.google.code.gson:gson:2.3.1'
+//Beware when updating this dependency OneDrive might break
 
     implementation 'com.microsoft.services.msa:msa-auth:0.8.4'
     implementation 'com.microsoft.aad:adal:1.1.7'
@@ -65,7 +66,15 @@ dependencies {
 
     //GoogleDrive
     fossImplementation 'com.google.apis:google-api-services-drive:v3-rev20191108-1.30.8'
-    
+
+    nonFossImplementation 'com.google.android.gms:play-services-auth:18.0.0'
+    nonFossImplementation 'com.google.http-client:google-http-client-gson:1.35.0'
+    nonFossImplementation('com.google.api-client:google-api-client-android:1.30.9') {
+        exclude group: 'org.apache.httpcomponents'
+    }
+    nonFossImplementation('com.google.apis:google-api-services-drive:v3-rev136-1.25.0') {
+        exclude group: 'org.apache.httpcomponents'
+    }
 
     //Box
     api 'com.box:box-android-sdk:4.2.3'
