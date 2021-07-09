@@ -13,6 +13,7 @@ import androidx.lifecycle.Observer
 import androidx.lifecycle.ViewModelProviders
 import com.amaze.laputacloudsapp.MainActivity
 import com.amaze.laputacloudsapp.R
+import com.amaze.laputacloudsapp.models.UploadViewModel
 
 class HomeFragment : Fragment() {
 
@@ -43,7 +44,10 @@ class HomeFragment : Fragment() {
 
         val startedAsFolderChooser = arguments!!.getBoolean(AS_FILE_CHOOSER_ARG)
 
-        (requireActivity() as MainActivity).uploadViewModel.selectingFileToUpload.value = startedAsFolderChooser
+        val uploadViewModel = ViewModelProviders.of( requireActivity() as MainActivity)
+            .get(UploadViewModel::class.java)
+
+        uploadViewModel.selectingFileToUpload.value = startedAsFolderChooser
 
         return root
     }

@@ -29,7 +29,6 @@ import kotlin.coroutines.resumeWithException
 class MainActivity : AppCompatActivity() {
 
     private lateinit var appBarConfiguration: AppBarConfiguration
-    lateinit var uploadViewModel: UploadViewModel
     var uploadingSnackbar: Snackbar? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -58,7 +57,7 @@ class MainActivity : AppCompatActivity() {
         setupActionBarWithNavController(navController, appBarConfiguration)
         navView.setupWithNavController(navController)
 
-        uploadViewModel = ViewModelProviders.of(this).get(UploadViewModel::class.java)
+        val uploadViewModel = ViewModelProviders.of(this).get(UploadViewModel::class.java)
 
         uploadViewModel.events.observe(this, Observer<Event<UploadViewModel.UploadEvent>> {
             val parentLayout: View = findViewById(android.R.id.content)

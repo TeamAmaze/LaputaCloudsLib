@@ -6,8 +6,10 @@ import android.os.Bundle
 import android.os.Environment
 import androidx.appcompat.app.AlertDialog
 import androidx.fragment.app.DialogFragment
+import androidx.lifecycle.ViewModelProviders
 import androidx.navigation.fragment.findNavController
 import com.amaze.laputacloudsapp.MainActivity
+import com.amaze.laputacloudsapp.models.UploadViewModel
 import com.amaze.laputacloudsapp.ui.tools.FileManagerFragment
 import com.amaze.laputacloudsapp.ui.tools.FileManagerViewModel
 import com.amaze.laputacloudslib.AbstractCloudFile
@@ -63,7 +65,8 @@ class FileActionsDialogFragment(
             }
         },
         "Upload" to {
-            val uploadViewModel = (requireActivity() as MainActivity).uploadViewModel
+            val uploadViewModel = ViewModelProviders.of( requireActivity() as MainActivity)
+                .get(UploadViewModel::class.java)
             uploadViewModel.fileToUpload = file
             uploadViewModel.selectingFileToUpload.value = true
 

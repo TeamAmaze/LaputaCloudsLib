@@ -12,6 +12,7 @@ import androidx.navigation.fragment.findNavController
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout
 import com.amaze.laputacloudsapp.*
 import com.amaze.laputacloudsapp.appfolder.PhoneAccount
+import com.amaze.laputacloudsapp.models.UploadViewModel
 import com.amaze.laputacloudsapp.ui.tools.dialogs.FileActionsDialogFragment
 import com.amaze.laputacloudslib.AbstractAccount
 import com.amaze.laputacloudslib.AbstractCloudFile
@@ -65,11 +66,14 @@ class FileManagerFragment : Fragment(), AdapterView.OnItemClickListener,
         fileManagerViewModel.selectedFile.observe(this, Observer { file ->
             swipeRefreshLayout.startLoad()
 
+            val uploadViewModel = ViewModelProviders.of( requireActivity() as MainActivity)
+                .get(UploadViewModel::class.java)
+
             if(filesListView.adapter == null) {
                 filesListView.adapter = FileListAdapter(
                     requireContext(),
                     mutableListOf(),
-                    (requireActivity() as MainActivity).uploadViewModel.selectingFileToUpload.value == true,
+                    uploadViewModel.selectingFileToUpload.value == true,
                     this::onClickUpload)
 
                 filesListView.onItemClickListener = this
@@ -109,7 +113,9 @@ class FileManagerFragment : Fragment(), AdapterView.OnItemClickListener,
     }
 
     fun onClickUpload() {
-        (requireActivity() as MainActivity).uploadViewModel.folderLiveData.value = fileManagerViewModel.selectedFile.value
+        val uploadViewModel = ViewModelProviders.of( requireActivity() as MainActivity)
+            .get(UploadViewModel::class.java)
+        uploadViewModel.folderLiveData.value = fileManagerViewModel.selectedFile.value
     }
 
     override fun onItemClick(
@@ -140,7 +146,10 @@ class FileManagerFragment : Fragment(), AdapterView.OnItemClickListener,
         position: Int,
         id: Long
     ): Boolean {
-        if((requireActivity() as MainActivity).uploadViewModel.selectingFileToUpload.value == true) {
+        val uploadViewModel = ViewModelProviders.of( requireActivity() as MainActivity)
+            .get(UploadViewModel::class.java)
+
+        if(uploadViewModel.selectingFileToUpload.value == true) {
             return false
         }
 
