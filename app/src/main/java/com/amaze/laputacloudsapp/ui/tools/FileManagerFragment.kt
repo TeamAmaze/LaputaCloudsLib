@@ -5,12 +5,15 @@ import android.view.*
 import android.widget.AdapterView
 import android.widget.ArrayAdapter
 import android.widget.ListView
+import androidx.activity.viewModels
 import androidx.fragment.app.Fragment
-import androidx.lifecycle.Observer
-import androidx.lifecycle.ViewModelProviders
-import androidx.navigation.fragment.findNavController
+import androidx.fragment.app.viewModels
+import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.get
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout
-import com.amaze.laputacloudsapp.*
+import com.amaze.laputacloudsapp.HiddenConstants
+import com.amaze.laputacloudsapp.MainActivity
+import com.amaze.laputacloudsapp.R
 import com.amaze.laputacloudsapp.appfolder.PhoneAccount
 import com.amaze.laputacloudsapp.models.UploadViewModel
 import com.amaze.laputacloudsapp.ui.tools.dialogs.FileActionsDialogFragment
@@ -35,7 +38,8 @@ class FileManagerFragment : Fragment(), AdapterView.OnItemClickListener,
         const val ACCOUNT_BOX = 4
     }
 
-    lateinit var fileManagerViewModel: FileManagerViewModel
+    private val fileManagerViewModel: FileManagerViewModel by viewModels()
+    private lateinit var uploadViewModel : UploadViewModel
 
     private var files: List<AbstractCloudFile>? = null
     private var optionsMenu: Menu? = null
@@ -48,13 +52,11 @@ class FileManagerFragment : Fragment(), AdapterView.OnItemClickListener,
     ): View? {
         setHasOptionsMenu(true)
 
-        fileManagerViewModel = ViewModelProviders.of(this).get(FileManagerViewModel::class.java)
-
         val root = inflater.inflate(R.layout.fragment_filemanager, container, false)
         val filesListView: ListView = root.findViewById(R.id.filesListView)
         val swipeRefreshLayout: SwipeRefreshLayout = root.findViewById(R.id.swipeRefreshLayout)
 
-        cloudId = arguments!!.getInt(CLOUD_SELECTED_ARG)
+        cloudId = requireArguments().getInt(CLOUD_SELECTED_ARG)
         val account = getCloudAccount(cloudId)
 
         Clouds.init(account) { driver ->
@@ -63,11 +65,8 @@ class FileManagerFragment : Fragment(), AdapterView.OnItemClickListener,
             }
         }
 
-        fileManagerViewModel.selectedFile.observe(this, Observer { file ->
+        fileManagerViewModel.selectedFile.observe(viewLifecycleOwner, { file ->
             swipeRefreshLayout.startLoad()
-
-            val uploadViewModel = ViewModelProviders.of( requireActivity() as MainActivity)
-                .get(UploadViewModel::class.java)
 
             if(filesListView.adapter == null) {
                 filesListView.adapter = FileListAdapter(
@@ -101,9 +100,11 @@ class FileManagerFragment : Fragment(), AdapterView.OnItemClickListener,
 
         })
 
-        fileManagerViewModel.moveStatus.observe(this, Observer { copiedFile ->
+        fileManagerViewModel.moveStatus.observe(viewLifecycleOwner, { copiedFile ->
             optionsMenu?.findItem(R.id.item_paste)!!.isVisible = copiedFile != null
         })
+
+        uploadViewModel = ViewModelProvider(requireActivity() as MainActivity).get()
 
         return root
     }
@@ -113,8 +114,6 @@ class FileManagerFragment : Fragment(), AdapterView.OnItemClickListener,
     }
 
     fun onClickUpload() {
-        val uploadViewModel = ViewModelProviders.of( requireActivity() as MainActivity)
-            .get(UploadViewModel::class.java)
         uploadViewModel.folderLiveData.value = fileManagerViewModel.selectedFile.value
     }
 
@@ -146,9 +145,6 @@ class FileManagerFragment : Fragment(), AdapterView.OnItemClickListener,
         position: Int,
         id: Long
     ): Boolean {
-        val uploadViewModel = ViewModelProviders.of( requireActivity() as MainActivity)
-            .get(UploadViewModel::class.java)
-
         if(uploadViewModel.selectingFileToUpload.value == true) {
             return false
         }
@@ -166,7 +162,7 @@ class FileManagerFragment : Fragment(), AdapterView.OnItemClickListener,
                 this,
                 file,
                 cloudId
-            ).show(requireFragmentManager(), "FILE")
+            ).show(parentFragmentManager, "FILE")
         }
 
         return true

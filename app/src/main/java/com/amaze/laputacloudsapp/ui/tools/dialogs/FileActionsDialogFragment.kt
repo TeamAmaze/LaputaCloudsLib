@@ -6,9 +6,8 @@ import android.os.Bundle
 import android.os.Environment
 import androidx.appcompat.app.AlertDialog
 import androidx.fragment.app.DialogFragment
-import androidx.lifecycle.ViewModelProviders
+import androidx.fragment.app.viewModels
 import androidx.navigation.fragment.findNavController
-import com.amaze.laputacloudsapp.MainActivity
 import com.amaze.laputacloudsapp.models.UploadViewModel
 import com.amaze.laputacloudsapp.ui.tools.FileManagerFragment
 import com.amaze.laputacloudsapp.ui.tools.FileManagerViewModel
@@ -20,19 +19,21 @@ import kotlinx.coroutines.launch
 import java.io.File
 import java.io.InputStream
 
-
 class FileActionsDialogFragment(
     private val fileManagerFragment: FileManagerFragment,
     private val file: AbstractCloudFile,
     private val cloudId: Int
 ) : DialogFragment() {
+
+    val fileManagerViewModel: FileManagerViewModel by fileManagerFragment.viewModels()
+
     private val DIALOG_ITEMS = listOf(
         "Copy" to {
-            fileManagerFragment.fileManagerViewModel.moveStatus.value =
+            fileManagerViewModel.moveStatus.value =
                 FileManagerViewModel.MoveStatus(file, false)
         },
         "Move" to {
-            fileManagerFragment.fileManagerViewModel.moveStatus.value =
+            fileManagerViewModel.moveStatus.value =
                 FileManagerViewModel.MoveStatus(file, true)
         },
         "Download" to {
@@ -65,8 +66,7 @@ class FileActionsDialogFragment(
             }
         },
         "Upload" to {
-            val uploadViewModel = ViewModelProviders.of( requireActivity() as MainActivity)
-                .get(UploadViewModel::class.java)
+            val uploadViewModel : UploadViewModel by viewModels()
             uploadViewModel.fileToUpload = file
             uploadViewModel.selectingFileToUpload.value = true
 

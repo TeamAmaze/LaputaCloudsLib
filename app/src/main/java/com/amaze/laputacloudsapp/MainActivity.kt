@@ -1,35 +1,28 @@
 package com.amaze.laputacloudsapp
 
-import android.os.AsyncTask
 import android.os.Bundle
 import android.view.View
+import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.Toolbar
 import androidx.drawerlayout.widget.DrawerLayout
-import androidx.lifecycle.Observer
-import androidx.lifecycle.ViewModelProviders
 import androidx.navigation.findNavController
 import androidx.navigation.ui.AppBarConfiguration
 import androidx.navigation.ui.navigateUp
 import androidx.navigation.ui.setupActionBarWithNavController
 import androidx.navigation.ui.setupWithNavController
 import com.amaze.laputacloudsapp.models.UploadViewModel
-import com.amaze.laputacloudslib.AbstractCloudFile
-import com.amaze.laputacloudslib.onedrive.OneDriveIOException
 import com.google.android.material.floatingactionbutton.FloatingActionButton
 import com.google.android.material.navigation.NavigationView
 import com.google.android.material.snackbar.Snackbar
-import kotlinx.coroutines.CoroutineExceptionHandler
-import kotlinx.coroutines.runBlocking
-import kotlinx.coroutines.suspendCancellableCoroutine
-import kotlin.coroutines.resume
-import kotlin.coroutines.resumeWithException
 
 
 class MainActivity : AppCompatActivity() {
 
     private lateinit var appBarConfiguration: AppBarConfiguration
     var uploadingSnackbar: Snackbar? = null
+
+    private val uploadViewModel : UploadViewModel by viewModels()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -57,9 +50,7 @@ class MainActivity : AppCompatActivity() {
         setupActionBarWithNavController(navController, appBarConfiguration)
         navView.setupWithNavController(navController)
 
-        val uploadViewModel = ViewModelProviders.of(this).get(UploadViewModel::class.java)
-
-        uploadViewModel.events.observe(this, Observer<Event<UploadViewModel.UploadEvent>> {
+        uploadViewModel.events.observe(this, {
             val parentLayout: View = findViewById(android.R.id.content)
             val content = it!!.peekContent()
 
@@ -85,7 +76,7 @@ class MainActivity : AppCompatActivity() {
             }
         })
 
-        uploadViewModel.folderLiveData.observe(this, Observer<AbstractCloudFile> { folder ->
+        uploadViewModel.folderLiveData.observe(this, { folder ->
             uploadViewModel.setUploadStarted()
             val size = uploadViewModel.fileToUpload!!.byteSize
 
