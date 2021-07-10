@@ -4,9 +4,6 @@ import android.os.Bundle
 import android.view.View
 import androidx.appcompat.app.AppCompatActivity
 import com.amaze.laputacloudslib.R
-import com.box.androidsdk.content.auth.OAuthWebView
-import com.box.androidsdk.content.auth.OAuthWebView.OAuthWebViewClient
-import kotlinx.android.synthetic.foss.activity_google_drive_oauth.*
 
 class GoogleDriveOAuthActivity : AppCompatActivity() {
     companion object {
@@ -18,7 +15,7 @@ class GoogleDriveOAuthActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_google_drive_oauth)
-        setSupportActionBar(toolbar)
+        setSupportActionBar(findViewById(R.id.toolbar))
 
         data = intent.getParcelableExtra(AUTH_DATA) as AuthorizerFragmentData
     }
