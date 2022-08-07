@@ -65,6 +65,7 @@ class HomeFragment : Fragment() {
         return true
     }
 
+    @Deprecated("TODO fix")
     override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
         if (requestCode == 0 && grantResults.isNotEmpty() || grantResults[0] == PackageManager.PERMISSION_GRANTED) {
             homeViewModel.text.value = "\uD83D\uDFE2 Has needed permissions"
