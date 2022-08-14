@@ -1,20 +1,14 @@
-package com.amaze.laputacloudslib
+package com.amaze.laputacloudslib.box
 
-import com.amaze.laputacloudslib.box.toFile
+import com.amaze.laputacloudslib.AbstractCloudFile
+import com.amaze.laputacloudslib.AbstractFileStructureDriver
+import com.amaze.laputacloudslib.CloudPath
 import com.box.androidsdk.content.BoxApiFile
 import com.box.androidsdk.content.BoxApiFolder
 import com.box.androidsdk.content.BoxConstants
 import com.box.androidsdk.content.models.BoxItem
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-
-abstract class AbstractFileStructureDriver {
-    abstract fun getRoot(): CloudPath
-
-    abstract suspend fun getFiles(path: CloudPath, callback: suspend (List<AbstractCloudFile>) -> Unit)
-
-    abstract suspend fun getFile(path: CloudPath, callback: suspend (AbstractCloudFile) -> Unit)
-}
 
 class BoxDriver(
     private val folderApi: BoxApiFolder,
@@ -41,14 +35,14 @@ class BoxDriver(
         path as BoxPath
 
         withContext(Dispatchers.IO) {
-            val fileInfo: BoxItem? = when {
-                path.isRoot -> null
+            val fileInfo: BoxItem = when {
+                path.isRoot -> TODO("Missing root")
                 path.isDirectory -> folderApi.getInfoRequest(path.id).send()
                 else -> fileApi.getInfoRequest(path.id).send()
             }
 
             withContext(Dispatchers.Main) {
-                callback(fileInfo?.toFile() ?: BoxFile(path, fileInfo))
+                callback(fileInfo.toFile())
             }
         }
     }

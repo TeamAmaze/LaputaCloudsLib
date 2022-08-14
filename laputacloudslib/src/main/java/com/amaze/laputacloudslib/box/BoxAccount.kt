@@ -1,6 +1,8 @@
-package com.amaze.laputacloudslib
+package com.amaze.laputacloudslib.box
 
 import android.content.Context
+import com.amaze.laputacloudslib.AbstractAccount
+import com.amaze.laputacloudslib.AbstractFileStructureDriver
 import com.box.androidsdk.content.BoxApiFile
 import com.box.androidsdk.content.BoxApiFolder
 import com.box.androidsdk.content.BoxConfig
@@ -9,10 +11,6 @@ import com.box.androidsdk.content.models.BoxSession
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
-
-abstract class AbstractAccount {
-    abstract suspend fun tryLogInAsync(callback: suspend (AbstractFileStructureDriver) -> Unit)
-}
 
 class BoxAccount(
     private val context: Context,

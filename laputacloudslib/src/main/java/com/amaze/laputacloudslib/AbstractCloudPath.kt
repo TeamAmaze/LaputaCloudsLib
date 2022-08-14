@@ -34,11 +34,3 @@ abstract class AbstractCloudPath<Path: AbstractCloudPath<Path>>(path: String): C
     override val fullPath: String
             get() = scheme + sanitizedPath
 }
-
-class BoxPath(val id: String, val isDirectory: Boolean = false, val isRoot: Boolean = false) : CloudPath {
-    override val scheme: String = "box:"
-
-    override val sanitizedPath = id
-
-    override val fullPath: String = scheme + id
-}

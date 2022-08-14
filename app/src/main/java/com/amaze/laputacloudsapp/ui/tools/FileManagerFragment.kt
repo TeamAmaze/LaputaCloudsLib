@@ -5,7 +5,6 @@ import android.view.*
 import android.widget.AdapterView
 import android.widget.ArrayAdapter
 import android.widget.ListView
-import androidx.activity.viewModels
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.ViewModelProvider
@@ -19,8 +18,8 @@ import com.amaze.laputacloudsapp.models.UploadViewModel
 import com.amaze.laputacloudsapp.ui.tools.dialogs.FileActionsDialogFragment
 import com.amaze.laputacloudslib.AbstractAccount
 import com.amaze.laputacloudslib.AbstractCloudFile
-import com.amaze.laputacloudslib.BoxAccount
 import com.amaze.laputacloudslib.Clouds
+import com.amaze.laputacloudslib.box.BoxAccount
 import com.amaze.laputacloudslib.dropbox.DropBoxAccount
 import com.amaze.laputacloudslib.googledrive.GoogleAccount
 import com.amaze.laputacloudslib.onedrive.OneDriveAccount

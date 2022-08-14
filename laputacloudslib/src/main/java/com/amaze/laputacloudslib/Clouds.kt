@@ -1,6 +1,5 @@
 package com.amaze.laputacloudslib
 
-import androidx.lifecycle.LifecycleOwner
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
