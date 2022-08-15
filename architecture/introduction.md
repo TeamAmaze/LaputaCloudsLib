@@ -1,8 +1,10 @@
 # Laputa Clouds Lib
 
-Manage files in Google Drive, OneDrive, pDrive, Box, DropBox. Spiritual successor to CloudRail
+Manage files in Google Drive, OneDrive, pDrive, Box, DropBox. Spiritual successor to CloudRail.
 
-# Component graph
+Allows for foss-only build, that allows skipping non opensource components, without losing features.
+
+## Component graph
 
 ```mermaid
 flowchart LR;
@@ -78,4 +80,23 @@ subgraph AbstractFileStructureDriver
     OneDriveCloudFile--->|path|OneDrivePath;
     PhoneFile        --->|path|PhonePath;
 end
+```
+
+## Operation graph
+
+```mermaid
+sequenceDiagram
+    participant App
+    participant Lib Dispatchers.Main
+    participant Lib Dispatchers.IO
+
+    App->>Lib Dispatchers.Main: Clouds.init
+    Lib Dispatchers.Main->>App: Account callback
+    App->>Lib Dispatchers.Main: App calls operation
+    Lib Dispatchers.Main->>Lib Dispatchers.IO: Lib executes operation
+    activate Lib Dispatchers.IO
+    Lib Dispatchers.IO->>Lib Dispatchers.Main: Result
+    deactivate Lib Dispatchers.IO
+    Lib Dispatchers.Main->>App: Lib calls result callback
+
 ```
