@@ -23,7 +23,7 @@ class BoxDriver(
         path as BoxPath
 
         withContext(Dispatchers.IO) {
-            val children = folderApi.getItemsRequest(path.id).send().map(BoxItem::toFile)
+            val children = folderApi.getItemsRequest(path.id).send().map { info -> info.toFile(fileApi) }
 
             withContext(Dispatchers.Main) {
                 callback(children)
@@ -42,7 +42,7 @@ class BoxDriver(
             }
 
             withContext(Dispatchers.Main) {
-                callback(fileInfo.toFile())
+                callback(fileInfo.toFile(fileApi))
             }
         }
     }

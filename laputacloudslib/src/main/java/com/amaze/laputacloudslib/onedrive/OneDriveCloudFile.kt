@@ -211,7 +211,7 @@ class OneDriveCloudFile(
                 object :
                     IProgressCallback<Item> {
                     override fun progress(current: Long, max: Long) {
-                        onProgress?.invoke(current)
+                        onProgress?.invoke(current)//TODO this should run in [Dispatchers::Main]
                     }
 
                     override fun success(result: Item) {

@@ -36,7 +36,15 @@ class BoxAccount(
     }
 
     override fun onLoggedOut(info: BoxAuthentication.BoxAuthenticationInfo?, ex: Exception?) {
-        TODO("Not yet implemented")
+        if(info != null && ex != null) {
+            throw BoxAccountException("Logged out of Box: " + info.toJson(), ex)
+        } else if(info == null && ex != null) {
+            throw BoxAccountException("Logged out of Box", ex)
+        } else if(info != null && ex == null) {
+            throw BoxAccountException("Logged out of Box: " + info.toJson())
+        } else if(info == null && ex == null) {
+            throw BoxAccountException("Logged out of Box")
+        }
     }
 
     override fun onAuthCreated(info: BoxAuthentication.BoxAuthenticationInfo?) {
@@ -49,10 +57,22 @@ class BoxAccount(
     }
 
     override fun onRefreshed(info: BoxAuthentication.BoxAuthenticationInfo?) {
-        TODO("Not yet implemented")
+        if(info != null) {
+            throw BoxAccountException("Connection was restarted: " + info.toJson())
+        } else {
+            throw BoxAccountException("Connection was restarted")
+        }
     }
 
     override fun onAuthFailure(info: BoxAuthentication.BoxAuthenticationInfo?, ex: Exception?) {
-        TODO("Not yet implemented")
+        if(info != null && ex != null) {
+            throw BoxAccountException("Auth failure: " + info.toJson(), ex)
+        } else if(info == null && ex != null) {
+            throw BoxAccountException("Auth failure", ex)
+        } else if(info != null && ex == null) {
+            throw BoxAccountException("Auth failure: " + info.toJson())
+        } else if(info == null && ex == null) {
+            throw BoxAccountException("Auth failure")
+        }
     }
 }
