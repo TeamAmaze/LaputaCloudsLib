@@ -62,15 +62,16 @@ open class FileManagerFragment<Path: CloudPath, File: AbstractCloudFile<Path, Fi
             }
         }
 
-        fileManagerViewModel.selectedFile.observe(viewLifecycleOwner, { file ->
+        fileManagerViewModel.selectedFile.observe(viewLifecycleOwner) { file ->
             swipeRefreshLayout.startLoad()
 
-            if(filesListView.adapter == null) {
+            if (filesListView.adapter == null) {
                 filesListView.adapter = FileListAdapter(
                     requireContext(),
                     mutableListOf(),
                     uploadViewModel.selectingFileToUpload.value == true,
-                    this::onClickUpload)
+                    this::onClickUpload
+                )
 
                 filesListView.onItemClickListener = this
                 filesListView.onItemLongClickListener = this
@@ -95,11 +96,11 @@ open class FileManagerFragment<Path: CloudPath, File: AbstractCloudFile<Path, Fi
                 }
             }
 
-        })
+        }
 
-        fileManagerViewModel.moveStatus.observe(viewLifecycleOwner, { copiedFile ->
+        fileManagerViewModel.moveStatus.observe(viewLifecycleOwner) { copiedFile ->
             optionsMenu?.findItem(R.id.item_paste)!!.isVisible = copiedFile != null
-        })
+        }
 
         uploadViewModel = ViewModelProvider(requireActivity() as MainActivity).get()
 
@@ -165,12 +166,14 @@ open class FileManagerFragment<Path: CloudPath, File: AbstractCloudFile<Path, Fi
         return true
     }
 
+    @Deprecated("Deprecated in Java")
     override fun onCreateOptionsMenu(menu: Menu, inflater: MenuInflater) {
         inflater.inflate(R.menu.main_appbar, menu)
 
         optionsMenu = menu
     }
 
+    @Deprecated("Deprecated in Java")
     override fun onOptionsItemSelected(item: MenuItem): Boolean =
         when(item.itemId) {
             R.id.item_paste -> {

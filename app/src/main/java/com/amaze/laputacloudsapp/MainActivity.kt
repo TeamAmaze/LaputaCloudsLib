@@ -51,18 +51,23 @@ class MainActivity : AppCompatActivity() {
         setupActionBarWithNavController(navController, appBarConfiguration)
         navView.setupWithNavController(navController)
 
-        uploadViewModel.events.observe(this, {
+        uploadViewModel.events.observe(this) {
             val parentLayout: View = findViewById(android.R.id.content)
             val content = it!!.peekContent()
 
-            when(content.type) {
+            when (content.type) {
                 UploadViewModel.UPLOAD_STARTED -> {
-                    uploadingSnackbar = Snackbar.make(parentLayout, "Uploading...", Snackbar.LENGTH_INDEFINITE)
+                    uploadingSnackbar =
+                        Snackbar.make(parentLayout, "Uploading...", Snackbar.LENGTH_INDEFINITE)
                     uploadingSnackbar!!.show()
                 }
                 UploadViewModel.UPLOAD_PROGRESS -> {
 
-                    uploadingSnackbar = Snackbar.make(parentLayout, "Uploading... " + content.progress + "%", Snackbar.LENGTH_INDEFINITE)
+                    uploadingSnackbar = Snackbar.make(
+                        parentLayout,
+                        "Uploading... " + content.progress + "%",
+                        Snackbar.LENGTH_INDEFINITE
+                    )
                     uploadingSnackbar!!.show()
                 }
                 UploadViewModel.UPLOAD_ENDED -> {
@@ -75,18 +80,18 @@ class MainActivity : AppCompatActivity() {
                     findNavController(R.id.nav_host_fragment).navigate(action)
                 }
             }
-        })
+        }
 
-        uploadViewModel.folderLiveData.observe(this, { folder ->
+        uploadViewModel.folderLiveData.observe(this) { folder ->
             uploadViewModel.setUploadStarted()
             val size = uploadViewModel.fileToUpload!!.byteSize
 
-            folder.uploadHere(uploadViewModel.fileToUpload!!, {bytesUploaded: Long ->
+            folder.uploadHere(uploadViewModel.fileToUpload!!, { bytesUploaded: Long ->
                 uploadViewModel.setUploadProgressed(bytesUploaded / size.toFloat() * 100)
             }) {
                 uploadViewModel.setUploadEnded()
             }
-        })
+        }
     }
 
     override fun onSupportNavigateUp(): Boolean {

@@ -34,9 +34,9 @@ class HomeFragment : Fragment() {
     ): View? {
         val root = inflater.inflate(R.layout.fragment_home, container, false)
         val textView: TextView = root.findViewById(R.id.text_home)
-        homeViewModel.text.observe(viewLifecycleOwner, {
+        homeViewModel.text.observe(viewLifecycleOwner) {
             textView.text = it
-        })
+        }
 
         if(checkPermission()) {
             homeViewModel.text.value = "\uD83D\uDFE2 Has needed permissions"
