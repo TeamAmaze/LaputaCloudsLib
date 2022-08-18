@@ -15,14 +15,14 @@ class BoxFile(
     private val fileApi: BoxApiFile,
     private val info: BoxItem,
     override val path: BoxPath
-): AbstractCloudFile() {
+): AbstractCloudFile<BoxPath, BoxFile>() {
     override val name: String = info.name ?: "root"
     override val isDirectory: Boolean = path.isDirectory
     override val isRootDirectory: Boolean = path.isRoot
     override val byteSize: Long
         get() = info.size
 
-    override fun getParent(callback: suspend (AbstractCloudFile?) -> Unit) {
+    override fun getParent(callback: suspend (BoxFile?) -> Unit) {
         val parent = info.parent
         val guessedParentPath = path.getParentPathFromPath()
 
@@ -45,16 +45,16 @@ class BoxFile(
 
     override fun copyTo(
         newName: String,
-        folder: AbstractCloudFile,
-        callback: (AbstractCloudFile) -> Unit
+        folder: BoxFile,
+        callback: (BoxFile) -> Unit
     ) {
         TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
     }
 
     override fun moveTo(
         newName: String,
-        folder: AbstractCloudFile,
-        callback: (AbstractCloudFile) -> Unit
+        folder: BoxFile,
+        callback: (BoxFile) -> Unit
     ) {
         TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
     }
@@ -74,9 +74,9 @@ class BoxFile(
     }
 
     override fun uploadHere(
-        fileToUpload: AbstractCloudFile,
+        fileToUpload: BoxFile,
         onProgress: ((bytes: Long) -> Unit)?,
-        callback: (uploadedFile: AbstractCloudFile) -> Unit
+        callback: (uploadedFile: BoxFile) -> Unit
     ) {
         TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
     }
@@ -86,7 +86,7 @@ class BoxFile(
         name: String,
         size: Long,
         onProgress: ((bytes: Long) -> Unit)?,
-        callback: (uploadedFile: AbstractCloudFile) -> Unit
+        callback: (uploadedFile: BoxFile) -> Unit
     ) {
         CoroutineScope(Dispatchers.IO)
             .launch {

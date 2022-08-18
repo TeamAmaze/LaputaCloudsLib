@@ -1,9 +1,9 @@
 package com.amaze.laputacloudslib
 
-abstract class AbstractFileStructureDriver {
-    abstract fun getRoot(): CloudPath
+abstract class AbstractFileStructureDriver<Path: CloudPath, File: AbstractCloudFile<Path, File>> {
+    abstract fun getRoot(): Path
 
-    abstract suspend fun getFiles(path: CloudPath, callback: suspend (List<AbstractCloudFile>) -> Unit)
+    abstract suspend fun getFiles(path: Path, callback: suspend (List<File>) -> Unit)
 
-    abstract suspend fun getFile(path: CloudPath, callback: suspend (AbstractCloudFile) -> Unit)
+    abstract suspend fun getFile(path: Path, callback: suspend (File) -> Unit)
 }

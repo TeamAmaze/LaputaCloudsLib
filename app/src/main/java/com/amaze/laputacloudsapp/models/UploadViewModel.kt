@@ -5,14 +5,15 @@ import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import com.amaze.laputacloudsapp.Event
 import com.amaze.laputacloudslib.AbstractCloudFile
+import com.amaze.laputacloudslib.CloudPath
 
 /**
  * Maintains the current state when the user is selecting a file to upload
  */
-class UploadViewModel : ViewModel() {
+class UploadViewModel<Path: CloudPath, File: AbstractCloudFile<Path, File>> : ViewModel() {
     val selectingFileToUpload: MutableLiveData<Boolean> = MutableLiveData()
-    var fileToUpload: AbstractCloudFile? = null
-    val folderLiveData: MutableLiveData<AbstractCloudFile> = MutableLiveData()
+    var fileToUpload: File? = null
+    val folderLiveData: MutableLiveData<File> = MutableLiveData()
     private val _uploadEvents = MutableLiveData<Event<UploadEvent>>()
 
     val events : LiveData<Event<UploadEvent>>

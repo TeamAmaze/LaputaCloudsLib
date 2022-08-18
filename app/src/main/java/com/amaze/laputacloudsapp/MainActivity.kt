@@ -11,18 +11,19 @@ import androidx.navigation.ui.AppBarConfiguration
 import androidx.navigation.ui.navigateUp
 import androidx.navigation.ui.setupActionBarWithNavController
 import androidx.navigation.ui.setupWithNavController
+import com.amaze.laputacloudsapp.appfolder.PhoneFile
+import com.amaze.laputacloudsapp.appfolder.PhonePath
 import com.amaze.laputacloudsapp.models.UploadViewModel
 import com.google.android.material.floatingactionbutton.FloatingActionButton
 import com.google.android.material.navigation.NavigationView
 import com.google.android.material.snackbar.Snackbar
-
 
 class MainActivity : AppCompatActivity() {
 
     private lateinit var appBarConfiguration: AppBarConfiguration
     var uploadingSnackbar: Snackbar? = null
 
-    private val uploadViewModel : UploadViewModel by viewModels()
+    private val uploadViewModel : UploadViewModel<PhonePath, PhoneFile> by viewModels()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)

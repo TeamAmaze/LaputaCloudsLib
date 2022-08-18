@@ -42,7 +42,7 @@
 
     <fragment
         android:id="@+id/nav_device"
-        android:name="com.amaze.laputacloudsapp.ui.tools.FileManagerFragment"
+        android:name="com.amaze.laputacloudsapp.ui.tools.PhoneFileManagerFragment"
         android:label="@string/app_folder"
         tools:layout="@layout/fragment_filemanager" >
         <argument
@@ -53,7 +53,7 @@
 
     <fragment
         android:id="@+id/nav_gdrive"
-        android:name="com.amaze.laputacloudsapp.ui.tools.FileManagerFragment"
+        android:name="com.amaze.laputacloudsapp.ui.tools.GoogleDriveFileManagerFragment"
         android:label="@string/google_drive"
         tools:layout="@layout/fragment_filemanager" >
         <argument
@@ -64,7 +64,7 @@
 
     <fragment
         android:id="@+id/nav_onedrive"
-        android:name="com.amaze.laputacloudsapp.ui.tools.FileManagerFragment"
+        android:name="com.amaze.laputacloudsapp.ui.tools.OneDriveFileManagerFragment"
         android:label="@string/onedrive"
         tools:layout="@layout/fragment_filemanager" >
         <argument
@@ -75,7 +75,7 @@
 
     <fragment
         android:id="@+id/nav_dropbox"
-        android:name="com.amaze.laputacloudsapp.ui.tools.FileManagerFragment"
+        android:name="com.amaze.laputacloudsapp.ui.tools.DropBoxFileManagerFragment"
         android:label="@string/dropbox"
         tools:layout="@layout/fragment_filemanager" >
         <argument
@@ -86,7 +86,7 @@
 
     <fragment
         android:id="@+id/nav_pdrive"
-        android:name="com.amaze.laputacloudsapp.ui.tools.FileManagerFragment"
+        android:name="com.amaze.laputacloudsapp.ui.tools.PhoneFileManagerFragment"
         android:label="@string/pdrive"
         tools:layout="@layout/fragment_filemanager" >
         <argument
@@ -97,7 +97,7 @@
 
     <fragment
         android:id="@+id/nav_box"
-        android:name="com.amaze.laputacloudsapp.ui.tools.FileManagerFragment"
+        android:name="com.amaze.laputacloudsapp.ui.tools.BoxFileManagerFragment"
         android:label="@string/box"
         tools:layout="@layout/fragment_filemanager" >
         <argument

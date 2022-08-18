@@ -25,7 +25,7 @@ class OneDriveAccount(
     private val msaaClientId: String?,
     private val redirectionUri: String?,
     private val adalClientId: String?
-): AbstractAccount() {
+): AbstractAccount<OneDrivePath, OneDriveCloudFile, OneDriveDriver>() {
     val msaAuthenticator = object : MSAAuthenticator() {
         override fun getClientId()= msaaClientId
 
@@ -38,7 +38,7 @@ class OneDriveAccount(
         override fun getRedirectUrl() = redirectionUri
     }
 
-    override suspend fun tryLogInAsync(callback: suspend (AbstractFileStructureDriver) -> Unit) {
+    override suspend fun tryLogInAsync(callback: suspend (OneDriveDriver) -> Unit) {
         val oneDriveConfig: IClientConfig =
             if(msaaClientId != null && redirectionUri != null && adalClientId != null) {
                 DefaultClientConfig.createWithAuthenticators(

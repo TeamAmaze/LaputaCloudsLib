@@ -18,7 +18,7 @@ class OneDriveCloudFile(
     override val path: OneDrivePath,
     val item: Item,
     override val isRootDirectory: Boolean = false
-): AbstractCloudFile() {
+): AbstractCloudFile<OneDrivePath, OneDriveCloudFile>() {
     override val name: String
         get() = item.name
 
@@ -27,8 +27,8 @@ class OneDriveCloudFile(
 
     override val byteSize = item.size
 
-    override fun getParent(callback: suspend (AbstractCloudFile?) -> Unit) {
-        path as OneDrivePath
+    override fun getParent(callback: suspend (OneDriveCloudFile?) -> Unit) {
+        path
 
         if(isRootDirectory) {
             CoroutineScope(Dispatchers.Main).launch {
@@ -58,8 +58,8 @@ class OneDriveCloudFile(
             })
     }
 
-    override fun copyTo(newName: String, folder: AbstractCloudFile, callback: (AbstractCloudFile) -> Unit) {
-        folder as OneDriveCloudFile
+    override fun copyTo(newName: String, folder: OneDriveCloudFile, callback: (OneDriveCloudFile) -> Unit) {
+        folder
 
         val parentReferenceForFolder = folder.item.toItemReference()
 
@@ -86,9 +86,7 @@ class OneDriveCloudFile(
     }
 
     @Suppress("unused")
-    fun copyToWithStatus(newName: String, folder: AbstractCloudFile, callback: (OneDriveCopyStatus) -> Unit) {
-        folder as OneDriveCloudFile
-
+    fun copyToWithStatus(newName: String, folder: OneDriveCloudFile, callback: (OneDriveCopyStatus) -> Unit) {
         val parentReferenceForFolder = folder.item.toItemReference()
 
         driver.oneDriveClient.drive.getItems(item.id).getCopy(newName, parentReferenceForFolder).buildRequest().post(
@@ -101,9 +99,7 @@ class OneDriveCloudFile(
             })
     }
 
-    override fun moveTo(newName: String, folder: AbstractCloudFile, callback: (AbstractCloudFile) -> Unit) {
-        folder as OneDriveCloudFile
-
+    override fun moveTo(newName: String, folder: OneDriveCloudFile, callback: (OneDriveCloudFile) -> Unit) {
         val newItem = Item().also {
             it.name = newName
             it.parentReference = folder.item.toItemReference()
@@ -129,9 +125,9 @@ class OneDriveCloudFile(
     }
 
     override fun uploadHere(
-        fileToUpload: AbstractCloudFile,
+        fileToUpload: OneDriveCloudFile,
         onProgress: ((bytes: Long) -> Unit)?,
-        callback: (uploadedFile: AbstractCloudFile) -> Unit
+        callback: (uploadedFile: OneDriveCloudFile) -> Unit
     ) {
         fileToUpload.download { inputStream ->
             uploadHere(inputStream, fileToUpload.name, fileToUpload.byteSize, onProgress, callback)
@@ -143,7 +139,7 @@ class OneDriveCloudFile(
         name: String,
         size: Long,
         onProgress: ((bytes: Long) -> Unit)?,
-        callback: (uploadedFile: AbstractCloudFile) -> Unit
+        callback: (uploadedFile: OneDriveCloudFile) -> Unit
     ) {
         CoroutineScope(Dispatchers.IO).launch {
             if (size <= 3 * 1024 * 1024) {
@@ -159,7 +155,7 @@ class OneDriveCloudFile(
     suspend fun uploadAsSmallFile(
         inputStream: InputStream,
         name: String,
-        callback: (uploadedFile: AbstractCloudFile) -> Unit
+        callback: (uploadedFile: OneDriveCloudFile) -> Unit
     )= withContext(Dispatchers.IO) {
         driver.oneDriveClient.drive
             .getItems(item.id)
@@ -190,7 +186,7 @@ class OneDriveCloudFile(
         name: String,
         size: Long,
         onProgress: ((bytes: Long) -> Unit)?,
-        callback: (uploadedFile: AbstractCloudFile) -> Unit
+        callback: (uploadedFile: OneDriveCloudFile) -> Unit
     ) = withContext(Dispatchers.IO) {
         val fileCompletePath = path.join(name)
 

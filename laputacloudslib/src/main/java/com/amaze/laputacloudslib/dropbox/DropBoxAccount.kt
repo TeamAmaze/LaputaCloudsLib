@@ -7,9 +7,9 @@ import com.dropbox.core.v2.DbxClientV2
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
-class DropBoxAccount(val accessToken: String) : AbstractAccount() {
+class DropBoxAccount(val accessToken: String) : AbstractAccount<DropBoxPath, DropBoxFile, DropBoxDriver>() {
     override suspend fun tryLogInAsync(
-        callback: suspend (AbstractFileStructureDriver) -> Unit
+        callback: suspend (DropBoxDriver) -> Unit
     ) {
         withContext(Dispatchers.Main) {
             val config =

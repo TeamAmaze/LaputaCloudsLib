@@ -15,13 +15,13 @@ class DropBoxFile(
     override val isRootDirectory: Boolean,
     override val name: String,
     override val isDirectory: Boolean
-) : AbstractCloudFile() {
+) : AbstractCloudFile<DropBoxPath, DropBoxFile>() {
     override val byteSize: Long
         get() = TODO("not implemented") //To change initializer of created properties use File | Settings | File Templates.
 
-    override fun getParent(callback: suspend (AbstractCloudFile?) -> Unit) {
+    override fun getParent(callback: suspend (DropBoxFile?) -> Unit) {
         CoroutineScope(Dispatchers.Main).launch {
-            path as DropBoxPath
+            path
             driver.getFile(path.getParentFromPath(), callback)
         }
     }
@@ -40,11 +40,9 @@ class DropBoxFile(
 
     override fun copyTo(
         newName: String,
-        folder: AbstractCloudFile,
-        callback: (AbstractCloudFile) -> Unit
+        folder: DropBoxFile,
+        callback: (DropBoxFile) -> Unit
     ) {
-        folder as DropBoxFile
-
         CoroutineScope(Dispatchers.IO)
             .launch {
             val result = driver.client.files().copyV2(path.sanitizedPathOrRoot, folder.path.join(newName).sanitizedPath)
@@ -58,11 +56,9 @@ class DropBoxFile(
 
     override fun moveTo(
         newName: String,
-        folder: AbstractCloudFile,
-        callback: (AbstractCloudFile) -> Unit
+        folder: DropBoxFile,
+        callback: (DropBoxFile) -> Unit
     ) {
-        folder as DropBoxFile
-
         CoroutineScope(Dispatchers.IO)
             .launch {
             val result = driver.client.files().moveV2(path.sanitizedPathOrRoot, folder.path.join(newName).sanitizedPath)
@@ -87,9 +83,9 @@ class DropBoxFile(
     }
 
     override fun uploadHere(
-        fileToUpload: AbstractCloudFile,
+        fileToUpload: DropBoxFile,
         onProgress: ((bytes: Long) -> Unit)?,
-        callback: (uploadedFile: AbstractCloudFile) -> Unit
+        callback: (uploadedFile: DropBoxFile) -> Unit
     ) {
         fileToUpload.download { inputStream ->
             uploadHere(inputStream, fileToUpload.name, fileToUpload.byteSize, onProgress, callback)
@@ -101,7 +97,7 @@ class DropBoxFile(
         name: String,
         size: Long,
         onProgress: ((bytes: Long) -> Unit)?,
-        callback: (uploadedFile: AbstractCloudFile) -> Unit
+        callback: (uploadedFile: DropBoxFile) -> Unit
     ) {
         CoroutineScope(Dispatchers.IO)
             .launch {
@@ -116,7 +112,7 @@ class DropBoxFile(
     suspend fun uploadAsSmallFile(
         inputStream: InputStream,
         name: String,
-        callback: (uploadedFile: AbstractCloudFile) -> Unit
+        callback: (uploadedFile: DropBoxFile) -> Unit
     ) =
         withContext(Dispatchers.IO) {
             try {
@@ -151,7 +147,7 @@ class DropBoxFile(
         name: String,
         size: Long,
         progressCallback: ((bytes: Long) -> Unit)?,
-        callback: (uploadedFile: AbstractCloudFile) -> Unit
+        callback: (uploadedFile: DropBoxFile) -> Unit
     ) =
         withContext(Dispatchers.IO) {
             val fileCompletePath = path.join(name)

@@ -3,7 +3,6 @@ package com.amaze.laputacloudslib.googledrive
 import android.content.Context
 import android.content.Intent
 import com.amaze.laputacloudslib.AbstractAccount
-import com.amaze.laputacloudslib.AbstractFileStructureDriver
 import com.amaze.laputacloudslib.googledrive.GoogleDriveFunctions.getDriveFromAccount
 import com.amaze.laputacloudslib.googledrive.GoogleDriveFunctions.getSignInClient
 import com.google.android.gms.auth.api.signin.*
@@ -20,7 +19,6 @@ import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.util.*
-
 
 internal object GoogleDriveFunctions {
     @JvmStatic
@@ -63,9 +61,9 @@ class GoogleAccount(
     val applicationName: String?,//For foss
     val clientId: String,//For foss
     val redirectUrl: String//For foss
-) : AbstractAccount() {
+) : AbstractAccount<GoogleDrivePath, GoogleDriveFile, GoogleDriveDriver>() {
 
-    override suspend fun tryLogInAsync(callback: suspend (AbstractFileStructureDriver) -> Unit) {
+    override suspend fun tryLogInAsync(callback: suspend (GoogleDriveDriver) -> Unit) {
         val account = GoogleSignIn.getLastSignedInAccount(context)
         if (account != null) {
             withContext(Dispatchers.Main) {
@@ -106,7 +104,7 @@ class GoogleAccount(
         }
     }
 
-    private fun loudSignIn(callback: suspend (AbstractFileStructureDriver) -> Unit) {
+    private fun loudSignIn(callback: suspend (GoogleDriveDriver) -> Unit) {
         GoogleDriveOnResultCallback.callback = {
                 activity: GoogleDrivePreSignInActivity,
                 googleDriveService: Drive?,

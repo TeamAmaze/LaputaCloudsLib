@@ -6,8 +6,8 @@ import java.io.InputStream
 
 class GoogleDriveFile(
     override val name: String,
-    override val path: CloudPath
-) : AbstractCloudFile() {
+    override val path: GoogleDrivePath
+) : AbstractCloudFile<GoogleDrivePath, GoogleDriveFile>() {
     override val isDirectory: Boolean
         get() = TODO("Not yet implemented")
     override val isRootDirectory: Boolean
@@ -15,7 +15,7 @@ class GoogleDriveFile(
     override val byteSize: Long
         get() = TODO("Not yet implemented")
 
-    override fun getParent(callback: suspend (AbstractCloudFile?) -> Unit) {
+    override fun getParent(callback: suspend (GoogleDriveFile?) -> Unit) {
         TODO("Not yet implemented")
     }
 
@@ -25,16 +25,16 @@ class GoogleDriveFile(
 
     override fun copyTo(
         newName: String,
-        folder: AbstractCloudFile,
-        callback: (AbstractCloudFile) -> Unit
+        folder: GoogleDriveFile,
+        callback: (GoogleDriveFile) -> Unit
     ) {
         TODO("Not yet implemented")
     }
 
     override fun moveTo(
         newName: String,
-        folder: AbstractCloudFile,
-        callback: (AbstractCloudFile) -> Unit
+        folder: GoogleDriveFile,
+        callback: (GoogleDriveFile) -> Unit
     ) {
         TODO("Not yet implemented")
     }
@@ -44,9 +44,9 @@ class GoogleDriveFile(
     }
 
     override fun uploadHere(
-        fileToUpload: AbstractCloudFile,
+        fileToUpload: GoogleDriveFile,
         onProgress: ((bytes: Long) -> Unit)?,
-        callback: (uploadedFile: AbstractCloudFile) -> Unit
+        callback: (uploadedFile: GoogleDriveFile) -> Unit
     ) {
         TODO("Not yet implemented")
     }
@@ -56,7 +56,7 @@ class GoogleDriveFile(
         name: String,
         size: Long,
         onProgress: ((bytes: Long) -> Unit)?,
-        callback: (uploadedFile: AbstractCloudFile) -> Unit
+        callback: (uploadedFile: GoogleDriveFile) -> Unit
     ) {
         TODO("Not yet implemented")
     }

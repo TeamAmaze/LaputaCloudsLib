@@ -7,23 +7,21 @@ import com.dropbox.core.v2.DbxClientV2
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
-class DropBoxDriver(val client: DbxClientV2) : AbstractFileStructureDriver() {
+class DropBoxDriver(val client: DbxClientV2) : AbstractFileStructureDriver<DropBoxPath, DropBoxFile>() {
     companion object {
         const val SCHEME = "dropbox:"
     }
 
-    override fun getRoot(): CloudPath {
+    override fun getRoot(): DropBoxPath {
         return DropBoxPath("/")
     }
 
-    override suspend fun getFiles(path: CloudPath, callback: suspend (List<AbstractCloudFile>) -> Unit) {
-        path as DropBoxPath
-
+    override suspend fun getFiles(path: DropBoxPath, callback: suspend (List<DropBoxFile>) -> Unit) {
         withContext(Dispatchers.IO) {
             var result = client.files().listFolder(path.sanitizedPathOrRoot)
 
             val fileList =
-                mutableListOf<AbstractCloudFile>()
+                mutableListOf<DropBoxFile>()
 
             while (true) {
                 fileList.addAll(result.entries.map {
@@ -40,7 +38,7 @@ class DropBoxDriver(val client: DbxClientV2) : AbstractFileStructureDriver() {
                     break
                 }
 
-                result = client.files().listFolderContinue(result.cursor);
+                result = client.files().listFolderContinue(result.cursor)
             }
 
             withContext(Dispatchers.Main) {
@@ -49,9 +47,7 @@ class DropBoxDriver(val client: DbxClientV2) : AbstractFileStructureDriver() {
         }
     }
 
-    override suspend fun getFile(path: CloudPath, callback: suspend (AbstractCloudFile) -> Unit) {
-        path as DropBoxPath
-
+    override suspend fun getFile(path: DropBoxPath, callback: suspend (DropBoxFile) -> Unit) {
         withContext(Dispatchers.IO) {
             val file = if (path.sanitizedPathOrRoot.isNotEmpty()) {//root folder has no metadata
                 val metadata = client.files().getMetadata(path.sanitizedPath)

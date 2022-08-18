@@ -1,14 +1,12 @@
 package com.amaze.laputacloudsapp.ui.home
 
 import android.Manifest
-import android.content.Context
 import android.content.pm.PackageManager
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.TextView
-import androidx.activity.viewModels
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
@@ -16,6 +14,8 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.get
 import com.amaze.laputacloudsapp.MainActivity
 import com.amaze.laputacloudsapp.R
+import com.amaze.laputacloudsapp.appfolder.PhoneFile
+import com.amaze.laputacloudsapp.appfolder.PhonePath
 import com.amaze.laputacloudsapp.models.UploadViewModel
 
 class HomeFragment : Fragment() {
@@ -25,7 +25,7 @@ class HomeFragment : Fragment() {
     }
 
     private val homeViewModel: HomeViewModel by viewModels()
-    private lateinit var uploadViewModel : UploadViewModel
+    private lateinit var uploadViewModel : UploadViewModel<PhonePath, PhoneFile>
 
     override fun onCreateView(
         inflater: LayoutInflater,

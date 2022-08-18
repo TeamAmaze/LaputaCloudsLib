@@ -13,15 +13,13 @@ import kotlinx.coroutines.withContext
 class BoxDriver(
     private val folderApi: BoxApiFolder,
     private val fileApi: BoxApiFile
-) : AbstractFileStructureDriver() {
-    override fun getRoot(): CloudPath = BoxPath(BoxConstants.ROOT_FOLDER_ID, isDirectory = true, isRoot = true)
+) : AbstractFileStructureDriver<BoxPath, BoxFile>() {
+    override fun getRoot(): BoxPath = BoxPath(BoxConstants.ROOT_FOLDER_ID, isDirectory = true, isRoot = true)
 
     override suspend fun getFiles(
-        path: CloudPath,
-        callback: suspend (List<AbstractCloudFile>) -> Unit
+        path: BoxPath,
+        callback: suspend (List<BoxFile>) -> Unit
     ) {
-        path as BoxPath
-
         withContext(Dispatchers.IO) {
             val children = folderApi.getItemsRequest(path.id).send().map { info -> info.toFile(fileApi) }
 
@@ -31,9 +29,7 @@ class BoxDriver(
         }
     }
 
-    override suspend fun getFile(path: CloudPath, callback: suspend (AbstractCloudFile) -> Unit) {
-        path as BoxPath
-
+    override suspend fun getFile(path: BoxPath, callback: suspend (BoxFile) -> Unit) {
         withContext(Dispatchers.IO) {
             val fileInfo: BoxItem = when {
                 path.isRoot -> TODO("Missing root")

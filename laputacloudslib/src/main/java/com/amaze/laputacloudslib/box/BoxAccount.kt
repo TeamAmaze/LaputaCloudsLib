@@ -16,7 +16,7 @@ class BoxAccount(
     private val context: Context,
     clientId: String,
     clientSecret: String
-) : AbstractAccount(), BoxAuthentication.AuthListener {
+) : AbstractAccount<BoxPath, BoxFile, BoxDriver>(), BoxAuthentication.AuthListener {
 
     init {
         BoxConfig.CLIENT_ID = clientId
@@ -27,9 +27,9 @@ class BoxAccount(
         it.setSessionAuthListener(this)
     }
 
-    lateinit var callback: suspend (AbstractFileStructureDriver) -> Unit
+    lateinit var callback: suspend (BoxDriver) -> Unit
 
-    override suspend fun tryLogInAsync(callback: suspend (AbstractFileStructureDriver) -> Unit) {
+    override suspend fun tryLogInAsync(callback: suspend (BoxDriver) -> Unit) {
         this.callback = callback
 
         session.authenticate(context)

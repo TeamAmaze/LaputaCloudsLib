@@ -16,15 +16,13 @@ import com.amaze.laputacloudsapp.R
 import com.amaze.laputacloudsapp.appfolder.PhoneAccount
 import com.amaze.laputacloudsapp.models.UploadViewModel
 import com.amaze.laputacloudsapp.ui.tools.dialogs.FileActionsDialogFragment
-import com.amaze.laputacloudslib.AbstractAccount
-import com.amaze.laputacloudslib.AbstractCloudFile
-import com.amaze.laputacloudslib.Clouds
+import com.amaze.laputacloudslib.*
 import com.amaze.laputacloudslib.box.BoxAccount
 import com.amaze.laputacloudslib.dropbox.DropBoxAccount
 import com.amaze.laputacloudslib.googledrive.GoogleAccount
 import com.amaze.laputacloudslib.onedrive.OneDriveAccount
 
-class FileManagerFragment : Fragment(), AdapterView.OnItemClickListener,
+open class FileManagerFragment<Path: CloudPath, File: AbstractCloudFile<Path, File>, Driver: AbstractFileStructureDriver<Path, File>, Account: AbstractAccount<Path, File, Driver>> : Fragment(), AdapterView.OnItemClickListener,
     AdapterView.OnItemLongClickListener {
 
     companion object {
@@ -37,10 +35,10 @@ class FileManagerFragment : Fragment(), AdapterView.OnItemClickListener,
         const val ACCOUNT_BOX = 4
     }
 
-    private val fileManagerViewModel: FileManagerViewModel by viewModels()
-    private lateinit var uploadViewModel : UploadViewModel
+    private val fileManagerViewModel: FileManagerViewModel<Path, File> by viewModels()
+    private lateinit var uploadViewModel : UploadViewModel<Path, File>
 
-    private var files: List<AbstractCloudFile>? = null
+    private var files: List<File>? = null
     private var optionsMenu: Menu? = null
     private var cloudId: Int = 0
 
@@ -56,7 +54,7 @@ class FileManagerFragment : Fragment(), AdapterView.OnItemClickListener,
         val swipeRefreshLayout: SwipeRefreshLayout = root.findViewById(R.id.swipeRefreshLayout)
 
         cloudId = requireArguments().getInt(CLOUD_SELECTED_ARG)
-        val account = getCloudAccount(cloudId)
+        val account = getCloudAccount(cloudId) as Account
 
         Clouds.init(account) { driver ->
             driver.getFile(driver.getRoot()) { file ->
@@ -197,7 +195,7 @@ class FileManagerFragment : Fragment(), AdapterView.OnItemClickListener,
             else -> false
         }
 
-    private fun getCloudAccount(id: Int): AbstractAccount = when (id) {
+    private fun getCloudAccount(id: Int): AbstractAccount<*, *, *> = when (id) {
         ACCOUNT_PHONE -> PhoneAccount()
         ACCOUNT_ONEDRIVE -> OneDriveAccount(
             requireActivity(),

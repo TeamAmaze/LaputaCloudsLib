@@ -13,16 +13,16 @@ import java.io.IOException
 import java.io.InputStream
 
 class PhoneFile(
-    override val path: CloudPath
-) : AbstractCloudFile() {
-    val file = (path as PhonePath).toFile()
+    override val path: PhonePath
+) : AbstractCloudFile<PhonePath, PhoneFile>() {
+    val file = path.toFile()
 
     override val name = file.name
     override val isDirectory = file.isDirectory
     override val isRootDirectory = path.sanitizedPath == SEPARATOR
     override val byteSize = file.length()
 
-    override fun getParent(callback: suspend (AbstractCloudFile?) -> Unit) {
+    override fun getParent(callback: suspend (PhoneFile?) -> Unit) {
         val parentPath = file.parentFile?.toPhonePath()
         CoroutineScope(Dispatchers.Main).launch {
             callback(if (parentPath == null) null else PhoneFile(parentPath))
@@ -39,10 +39,10 @@ class PhoneFile(
 
     override fun copyTo(
         newName: String,
-        folder: AbstractCloudFile,
-        callback: (AbstractCloudFile) -> Unit
+        folder: PhoneFile,
+        callback: (PhoneFile) -> Unit
     ) {
-        folder as PhoneFile
+        folder
 
         val targetFile = File(folder.file, newName)
 
@@ -53,13 +53,13 @@ class PhoneFile(
 
     override fun moveTo(
         newName: String,
-        folder: AbstractCloudFile,
-        callback: (AbstractCloudFile) -> Unit
+        folder: PhoneFile,
+        callback: (PhoneFile) -> Unit
     ) {
         copyTo(newName, folder) {
             file.delete()
 
-            folder as PhoneFile
+            folder
 
             val targetFile = File(folder.file, newName)
             callback(PhoneFile(targetFile.toPhonePath()))
@@ -71,9 +71,9 @@ class PhoneFile(
     }
 
     override fun uploadHere(
-        fileToUpload: AbstractCloudFile,
+        fileToUpload: PhoneFile,
         onProgress: ((bytes: Long) -> Unit)?,
-        callback: (uploadedFile: AbstractCloudFile) -> Unit
+        callback: (uploadedFile: PhoneFile) -> Unit
     ) {
         throw NotImplementedError("Use copyTo or moveTo")
     }
@@ -83,14 +83,14 @@ class PhoneFile(
         name: String,
         size: Long,
         onProgress: ((bytes: Long) -> Unit)?,
-        callback: (uploadedFile: AbstractCloudFile) -> Unit
+        callback: (uploadedFile: PhoneFile) -> Unit
     ) {
         throw NotImplementedError("Use copyTo or moveTo")
     }
 
 }
 
-class PhoneDriver : AbstractFileStructureDriver() {
+class PhoneDriver : AbstractFileStructureDriver<PhonePath, PhoneFile>() {
     companion object {
         val FALSE_ROOT = getStartingFile().canonicalPath
 
@@ -125,19 +125,19 @@ class PhoneDriver : AbstractFileStructureDriver() {
                 || "google_sdk" == Build.PRODUCT)
     }
 
-    override fun getRoot(): CloudPath {
+    override fun getRoot(): PhonePath {
         return PhonePath("/")
     }
 
-    override suspend fun getFiles(path: CloudPath, callback: suspend (List<AbstractCloudFile>) -> Unit) {
-        path as PhonePath
+    override suspend fun getFiles(path: PhonePath, callback: suspend (List<PhoneFile>) -> Unit) {
+        path
 
         callback(path.toFile().listFiles()!!.map {  it: File ->
             PhoneFile(it.toPhonePath())
         })
     }
 
-    override suspend fun getFile(path: CloudPath, callback: suspend (AbstractCloudFile) -> Unit) {
+    override suspend fun getFile(path: PhonePath, callback: suspend (PhoneFile) -> Unit) {
         callback(PhoneFile(File(path.fullPath).toPhonePath()))
     }
 }
@@ -152,8 +152,8 @@ class PhonePath(path: String) : AbstractCloudPath<PhonePath>(path) {
     fun toFile() = File(fullPath)
 }
 
-class PhoneAccount : AbstractAccount() {
-    override suspend fun tryLogInAsync(callback: suspend (AbstractFileStructureDriver) -> Unit) {
+class PhoneAccount : AbstractAccount<PhonePath, PhoneFile, PhoneDriver>() {
+    override suspend fun tryLogInAsync(callback: suspend (PhoneDriver) -> Unit) {
         callback(PhoneDriver())
     }
 }

@@ -11,7 +11,10 @@ import androidx.navigation.fragment.findNavController
 import com.amaze.laputacloudsapp.models.UploadViewModel
 import com.amaze.laputacloudsapp.ui.tools.FileManagerFragment
 import com.amaze.laputacloudsapp.ui.tools.FileManagerViewModel
+import com.amaze.laputacloudslib.AbstractAccount
 import com.amaze.laputacloudslib.AbstractCloudFile
+import com.amaze.laputacloudslib.AbstractFileStructureDriver
+import com.amaze.laputacloudslib.CloudPath
 import com.google.android.material.snackbar.Snackbar
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
@@ -19,13 +22,13 @@ import kotlinx.coroutines.launch
 import java.io.File
 import java.io.InputStream
 
-class FileActionsDialogFragment(
-    private val fileManagerFragment: FileManagerFragment,
-    private val file: AbstractCloudFile,
+class FileActionsDialogFragment<Path: CloudPath, CloudFile: AbstractCloudFile<Path, CloudFile>, Driver: AbstractFileStructureDriver<Path, CloudFile>, Account: AbstractAccount<Path, CloudFile, Driver>>(
+    private val fileManagerFragment: FileManagerFragment<Path, CloudFile, Driver, Account>,
+    private val file: CloudFile,
     private val cloudId: Int
 ) : DialogFragment() {
 
-    val fileManagerViewModel: FileManagerViewModel by fileManagerFragment.viewModels()
+    val fileManagerViewModel: FileManagerViewModel<Path, CloudFile> by fileManagerFragment.viewModels()
 
     private val DIALOG_ITEMS = listOf(
         "Copy" to {
@@ -66,7 +69,7 @@ class FileActionsDialogFragment(
             }
         },
         "Upload" to {
-            val uploadViewModel : UploadViewModel by viewModels()
+            val uploadViewModel : UploadViewModel<Path, CloudFile> by viewModels()
             uploadViewModel.fileToUpload = file
             uploadViewModel.selectingFileToUpload.value = true
 
@@ -89,9 +92,7 @@ class FileActionsDialogFragment(
             .filter {
                 if(cloudId == FileManagerFragment.ACCOUNT_PHONE && it.first == "Download") {
                     false
-                } else if(cloudId != FileManagerFragment.ACCOUNT_PHONE && it.first == "Upload") {
-                    false
-                } else true
+                } else !(cloudId != FileManagerFragment.ACCOUNT_PHONE && it.first == "Upload")
             }
 
         val builder = AlertDialog.Builder(requireActivity())

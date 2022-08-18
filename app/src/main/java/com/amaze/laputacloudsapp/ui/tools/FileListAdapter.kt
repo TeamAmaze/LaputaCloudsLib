@@ -8,7 +8,6 @@ import android.widget.ArrayAdapter
 import androidx.databinding.DataBindingUtil
 import com.amaze.laputacloudsapp.R
 import com.amaze.laputacloudsapp.databinding.FolderItemBinding
-import com.amaze.laputacloudslib.AbstractCloudFile
 
 class FileListAdapter(
     context: Context,
