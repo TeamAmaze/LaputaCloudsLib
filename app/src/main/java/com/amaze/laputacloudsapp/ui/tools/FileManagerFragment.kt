@@ -5,11 +5,13 @@ import android.view.*
 import android.widget.AdapterView
 import android.widget.ArrayAdapter
 import android.widget.ListView
+import android.widget.Toast
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.get
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout
+import arrow.core.Either
 import com.amaze.laputacloudsapp.HiddenConstants
 import com.amaze.laputacloudsapp.MainActivity
 import com.amaze.laputacloudsapp.R
@@ -57,8 +59,14 @@ open class FileManagerFragment<Path: CloudPath, File: AbstractCloudFile<Path, Fi
         val account = getCloudAccount(cloudId) as Account
 
         Clouds.init(account) { driver ->
-            driver.getFile(driver.getRoot()) { file ->
-                fileManagerViewModel.selectedFile.value = file
+            when(driver) {
+                is Either.Left -> Toast.makeText(context, "Error: ${driver.value.message}", Toast.LENGTH_LONG).show()
+                is Either.Right -> driver.value.getFile(driver.value.getRoot()) { file ->
+                    when(file) {
+                        is Either.Left -> Toast.makeText(context, "Error: ${file.value.message}", Toast.LENGTH_LONG).show()
+                        is Either.Right -> fileManagerViewModel.selectedFile.value = file.value
+                    }
+                }
             }
         }
 
@@ -78,21 +86,33 @@ open class FileManagerFragment<Path: CloudPath, File: AbstractCloudFile<Path, Fi
             }
 
             Clouds.init(account) { driver ->
-                driver.getFiles(file.path) { files ->
-                    this.files = files
+                when(driver) {
+                    is Either.Left -> Toast.makeText(context, "Error: ${driver.value.message}", Toast.LENGTH_LONG).show()
+                    is Either.Right -> driver.value.getFiles(file.path) { files ->
+                        when (files) {
+                            is Either.Left -> Toast.makeText(
+                                context,
+                                "Error: ${files.value.message}",
+                                Toast.LENGTH_LONG
+                            ).show()
+                            is Either.Right -> {
+                                this.files = files.value
 
-                    val adapter =
-                        (filesListView.adapter as ArrayAdapter<FileListAdapter.FileData>)
+                                val adapter =
+                                    (filesListView.adapter as ArrayAdapter<FileListAdapter.FileData>)
 
-                    adapter.clear()
-                    if (!file.isRootDirectory) {
-                        adapter.add(FileListAdapter.FileData("..", true))
+                                adapter.clear()
+                                if (!file.isRootDirectory) {
+                                    adapter.add(FileListAdapter.FileData("..", true))
+                                }
+                                adapter.addAll(files.value.map {
+                                    FileListAdapter.FileData(it.name, it.isDirectory)
+                                })
+                            }
+                        }
+
+                        swipeRefreshLayout.endLoad()
                     }
-                    adapter.addAll(files.map {
-                        FileListAdapter.FileData(it.name, it.isDirectory)
-                    })
-
-                    swipeRefreshLayout.endLoad()
                 }
             }
 
@@ -124,8 +144,11 @@ open class FileManagerFragment<Path: CloudPath, File: AbstractCloudFile<Path, Fi
         val selectedFile = fileManagerViewModel.selectedFile.value!!
 
         if(position == 0 && !selectedFile.isRootDirectory) {
-            selectedFile.getParent {
-                fileManagerViewModel.selectedFile.value = it
+            selectedFile.getParent { parentFile ->
+                when(parentFile) {
+                    is Either.Left -> Toast.makeText(context, "Error: ${parentFile.value.message}", Toast.LENGTH_LONG).show()
+                    is Either.Right -> fileManagerViewModel.selectedFile.value = parentFile.value
+                }
             }
             return
         }

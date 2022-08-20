@@ -2,6 +2,10 @@ package com.amaze.laputacloudsapp.appfolder
 
 import android.os.Build
 import android.os.Environment
+import arrow.core.Either
+import arrow.core.computations.ResultEffect.bind
+import arrow.core.computations.either
+import arrow.core.computations.result
 import com.amaze.laputacloudsapp.appfolder.PhoneDriver.Companion.FALSE_ROOT
 import com.amaze.laputacloudslib.*
 import com.amaze.laputacloudslib.AbstractCloudPath.Companion.SEPARATOR
@@ -22,60 +26,106 @@ class PhoneFile(
     override val isRootDirectory = path.sanitizedPath == SEPARATOR
     override val byteSize = file.length()
 
-    override fun getParent(callback: suspend (PhoneFile?) -> Unit) {
-        val parentPath = file.parentFile?.toPhonePath()
-        CoroutineScope(Dispatchers.Main).launch {
-            callback(if (parentPath == null) null else PhoneFile(parentPath))
+    override fun getParent(callback: suspend (Either<Exception, PhoneFile>) -> Unit) {
+        CoroutineScope(Dispatchers.IO).launch {
+            val result = either<Exception, PhoneFile> {
+                val parentPath = file.parentFile?.toPhonePath() ?: throw Exception("No parent")
+                PhoneFile(parentPath)
+            }
+
+            CoroutineScope(Dispatchers.Main).launch {
+                callback(result)
+            }
         }
     }
 
-    override fun delete(callback: () -> Unit) {
-        if(!file.delete()) {
-            throw IOException("Delete failed")
-        }
+    override fun delete(callback: (Either<Exception, Unit>) -> Unit) {
+        CoroutineScope(Dispatchers.IO).launch {
+            val result = either<Exception, Unit> {
+                if (!file.delete()) {
+                    throw IOException("Delete failed")
+                }
 
-        callback()
+                Unit
+            }
+
+            CoroutineScope(Dispatchers.Main).launch {
+                callback(result)
+            }
+        }
     }
 
     override fun copyTo(
         newName: String,
         folder: PhoneFile,
-        callback: (PhoneFile) -> Unit
+        callback: (Either<Exception, PhoneFile>) -> Unit
     ) {
-        folder
+        CoroutineScope(Dispatchers.IO).launch {
+            val result = either<Exception, PhoneFile> {
+                val targetFile = File(folder.file, newName)
+                file.copyTo(targetFile)
+                PhoneFile(targetFile.toPhonePath())
+            }
 
-        val targetFile = File(folder.file, newName)
-
-        file.copyTo(targetFile)
-
-        callback(PhoneFile(targetFile.toPhonePath()))
+            CoroutineScope(Dispatchers.Main).launch {
+                callback(result)
+            }
+        }
     }
 
     override fun moveTo(
         newName: String,
         folder: PhoneFile,
-        callback: (PhoneFile) -> Unit
+        callback: (Either<Exception, PhoneFile>) -> Unit
     ) {
-        copyTo(newName, folder) {
-            file.delete()
+        copyTo(newName, folder) { it ->
+            CoroutineScope(Dispatchers.IO).launch {
+                val result = either<Exception, PhoneFile> {
+                    it.bind()
 
-            folder
+                    val deleted = file.delete()
 
-            val targetFile = File(folder.file, newName)
-            callback(PhoneFile(targetFile.toPhonePath()))
+                    if (!deleted) {
+                        throw Exception("Error deleting")
+                    }
+
+                    val targetFile = File(folder.file, newName)
+                    PhoneFile(targetFile.toPhonePath())
+                }
+
+                CoroutineScope(Dispatchers.Main).launch {
+                    callback(result)
+                }
+            }
         }
     }
 
-    override fun download(callback: (InputStream) -> Unit) {
-        callback(file.inputStream())
+    override fun download(callback: (Either<Exception, InputStream>) -> Unit) {
+        CoroutineScope(Dispatchers.IO).launch {
+            val result = either<Exception, InputStream> {
+                file.inputStream()
+            }
+
+            CoroutineScope(Dispatchers.Main).launch {
+                callback(result)
+            }
+        }
     }
 
     override fun uploadHere(
         fileToUpload: PhoneFile,
         onProgress: ((bytes: Long) -> Unit)?,
-        callback: (uploadedFile: PhoneFile) -> Unit
+        callback: (uploadedFile: Either<Exception, PhoneFile>) -> Unit
     ) {
-        throw NotImplementedError("Use copyTo or moveTo")
+        CoroutineScope(Dispatchers.IO).launch {
+            val result = either<Exception, PhoneFile> {
+                throw NotImplementedError("Use copyTo or moveTo")
+            }
+
+            CoroutineScope(Dispatchers.Main).launch {
+                callback(result)
+            }
+        }
     }
 
     override fun uploadHere(
@@ -83,9 +133,17 @@ class PhoneFile(
         name: String,
         size: Long,
         onProgress: ((bytes: Long) -> Unit)?,
-        callback: (uploadedFile: PhoneFile) -> Unit
+        callback: (uploadedFile: Either<Exception, PhoneFile>) -> Unit
     ) {
-        throw NotImplementedError("Use copyTo or moveTo")
+        CoroutineScope(Dispatchers.IO).launch {
+            val result = either<Exception, PhoneFile> {
+                throw NotImplementedError("Use copyTo or moveTo")
+            }
+
+            CoroutineScope(Dispatchers.Main).launch {
+                callback(result)
+            }
+        }
     }
 
 }
@@ -129,16 +187,28 @@ class PhoneDriver : AbstractFileStructureDriver<PhonePath, PhoneFile>() {
         return PhonePath("/")
     }
 
-    override suspend fun getFiles(path: PhonePath, callback: suspend (List<PhoneFile>) -> Unit) {
-        path
+    override suspend fun getFiles(path: PhonePath, callback: suspend (Either<Exception, List<PhoneFile>>) -> Unit) {
+        CoroutineScope(Dispatchers.IO).launch {
+            val result = either<Exception, List<PhoneFile>> {
+                path.toFile().listFiles()!!.map {
+                    PhoneFile(it.toPhonePath())
+                }
+            }
 
-        callback(path.toFile().listFiles()!!.map {  it: File ->
-            PhoneFile(it.toPhonePath())
-        })
+            CoroutineScope(Dispatchers.Main).launch {
+                callback(result)
+            }
+        }
     }
 
-    override suspend fun getFile(path: PhonePath, callback: suspend (PhoneFile) -> Unit) {
-        callback(PhoneFile(File(path.fullPath).toPhonePath()))
+    override suspend fun getFile(path: PhonePath, callback: suspend (Either<Exception, PhoneFile>) -> Unit) {
+        val result = either<Exception, PhoneFile> {
+            PhoneFile(File(path.fullPath).toPhonePath())
+        }
+
+        CoroutineScope(Dispatchers.Main).launch {
+            callback(result)
+        }
     }
 }
 
@@ -153,7 +223,7 @@ class PhonePath(path: String) : AbstractCloudPath<PhonePath>(path) {
 }
 
 class PhoneAccount : AbstractAccount<PhonePath, PhoneFile, PhoneDriver>() {
-    override suspend fun tryLogInAsync(callback: suspend (PhoneDriver) -> Unit) {
-        callback(PhoneDriver())
+    override suspend fun tryLogInAsync(callback: suspend (Either<Exception, PhoneDriver>) -> Unit) {
+        callback(Either.Right(PhoneDriver()))
     }
 }

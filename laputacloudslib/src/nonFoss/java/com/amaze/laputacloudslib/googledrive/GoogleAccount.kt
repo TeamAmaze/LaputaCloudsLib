@@ -2,6 +2,7 @@ package com.amaze.laputacloudslib.googledrive
 
 import android.content.Context
 import android.content.Intent
+import arrow.core.Either
 import com.amaze.laputacloudslib.AbstractAccount
 import com.amaze.laputacloudslib.googledrive.GoogleDriveFunctions.getDriveFromAccount
 import com.amaze.laputacloudslib.googledrive.GoogleDriveFunctions.getSignInClient
@@ -63,11 +64,21 @@ class GoogleAccount(
     val redirectUrl: String//For foss
 ) : AbstractAccount<GoogleDrivePath, GoogleDriveFile, GoogleDriveDriver>() {
 
-    override suspend fun tryLogInAsync(callback: suspend (GoogleDriveDriver) -> Unit) {
+    override suspend fun tryLogInAsync(callback: suspend (Either<Exception, GoogleDriveDriver>) -> Unit) {
         val account = GoogleSignIn.getLastSignedInAccount(context)
         if (account != null) {
             withContext(Dispatchers.Main) {
-                callback(GoogleDriveDriver(getDriveFromAccount(context, account, applicationName)))
+                callback(
+                    Either.Right(
+                        GoogleDriveDriver(
+                            getDriveFromAccount(
+                                context,
+                                account,
+                                applicationName
+                            )
+                        )
+                    )
+                )
             }
             return
         }
@@ -80,14 +91,14 @@ class GoogleAccount(
                 val driver = GoogleDriveDriver(getDriveFromAccount(context, signInAccount, applicationName))
 
                 withContext(Dispatchers.Main) {
-                    callback(driver)
+                    callback(Either.Right(driver))
                 }
             } else {
                 task.addOnSuccessListener { signInAccount: GoogleSignInAccount ->
                     val driver = GoogleDriveDriver(getDriveFromAccount(context, signInAccount, applicationName))
 
                     MainScope().launch {
-                        callback(driver)
+                        callback(Either.Right(driver))
                     }
                 }
 
@@ -98,30 +109,35 @@ class GoogleAccount(
                         return@addOnFailureListener
                     }
 
-                    throw GoogleDriveException(exception)
+                    MainScope().launch {
+                        callback(Either.Left(GoogleDriveException(exception)))
+                    }
                 }
             }
         }
     }
 
-    private fun loudSignIn(callback: suspend (GoogleDriveDriver) -> Unit) {
-        GoogleDriveOnResultCallback.callback = {
-                activity: GoogleDrivePreSignInActivity,
-                googleDriveService: Drive?,
-                ex: Exception? ->
-            if(googleDriveService == null) {
-                if(ex == null) throw GoogleDriveException("Something failed when signing in!")
-                else throw GoogleDriveException(ex)
-            }
-
+    private fun loudSignIn(callback: suspend (Either<Exception, GoogleDriveDriver>) -> Unit) {
+        GoogleDriveOnResultCallback.callback = { activity: GoogleDrivePreSignInActivity,
+                                                 googleDriveService: Drive?,
+                                                 ex: Exception? ->
             MainScope().launch {
-                GoogleDriveOnResultCallback.callback = null
-                callback(GoogleDriveDriver(googleDriveService))
-            }
-        }
+                if (googleDriveService == null) {
+                    if (ex == null) {
+                        callback(Either.Left(GoogleDriveException("Something failed when signing in!")))
+                    } else {
+                        callback(Either.Left(GoogleDriveException(ex)))
+                    }
+                    return@launch
+                }
 
-        context.startActivity(Intent(context, GoogleDrivePreSignInActivity::class.java).also {
-            it.putExtra(GoogleDrivePreSignInActivity.APPLICATION_NAME_ARG, applicationName)
-        })
+                GoogleDriveOnResultCallback.callback = null
+                callback(Either.Right(GoogleDriveDriver(googleDriveService)))
+            }
+
+            context.startActivity(Intent(context, GoogleDrivePreSignInActivity::class.java).also {
+                it.putExtra(GoogleDrivePreSignInActivity.APPLICATION_NAME_ARG, applicationName)
+            })
+        }
     }
 }

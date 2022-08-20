@@ -1,8 +1,8 @@
 package com.amaze.laputacloudslib.dropbox
 
-import com.amaze.laputacloudslib.AbstractCloudFile
+import arrow.core.Either
+import arrow.core.computations.either
 import com.amaze.laputacloudslib.AbstractFileStructureDriver
-import com.amaze.laputacloudslib.CloudPath
 import com.dropbox.core.v2.DbxClientV2
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -16,54 +16,60 @@ class DropBoxDriver(val client: DbxClientV2) : AbstractFileStructureDriver<DropB
         return DropBoxPath("/")
     }
 
-    override suspend fun getFiles(path: DropBoxPath, callback: suspend (List<DropBoxFile>) -> Unit) {
+    override suspend fun getFiles(path: DropBoxPath, callback: suspend (Either<Exception, List<DropBoxFile>>) -> Unit) {
         withContext(Dispatchers.IO) {
-            var result = client.files().listFolder(path.sanitizedPathOrRoot)
+            val result = either<Exception, List<DropBoxFile>> {
+                var listFiles = client.files().listFolder(path.sanitizedPathOrRoot)
 
-            val fileList =
-                mutableListOf<DropBoxFile>()
+                val fileList =
+                    mutableListOf<DropBoxFile>()
 
-            while (true) {
-                fileList.addAll(result.entries.map {
-                    DropBoxFile(
-                        this@DropBoxDriver,
-                        DropBoxPath(it.pathLower),
-                        false,
-                        it.name,
-                        it.isFolder()
-                    )
-                })
+                while (true) {
+                    fileList.addAll(listFiles.entries.map {
+                        DropBoxFile(
+                            this@DropBoxDriver,
+                            DropBoxPath(it.pathLower),
+                            false,
+                            it.name,
+                            it.isFolder()
+                        )
+                    })
 
-                if (!result.hasMore) {
-                    break
+                    if (!listFiles.hasMore) {
+                        break
+                    }
+
+                    listFiles = client.files().listFolderContinue(listFiles.cursor)
                 }
 
-                result = client.files().listFolderContinue(result.cursor)
+                fileList
             }
 
             withContext(Dispatchers.Main) {
-                callback(fileList)
+                callback(result)
             }
         }
     }
 
-    override suspend fun getFile(path: DropBoxPath, callback: suspend (DropBoxFile) -> Unit) {
+    override suspend fun getFile(path: DropBoxPath, callback: suspend (Either<Exception, DropBoxFile>) -> Unit) {
         withContext(Dispatchers.IO) {
-            val file = if (path.sanitizedPathOrRoot.isNotEmpty()) {//root folder has no metadata
-                val metadata = client.files().getMetadata(path.sanitizedPath)
-                metadata.toDropBoxFile(this@DropBoxDriver)
-            } else {
-                DropBoxFile(
-                    this@DropBoxDriver,
-                    DropBoxPath("/"),
-                    true,
-                    "root",
-                    true
-                )
+            val result = either<Exception, DropBoxFile> {
+                if (path.sanitizedPathOrRoot.isNotEmpty()) {//root folder has no metadata
+                    val metadata = client.files().getMetadata(path.sanitizedPath)
+                    metadata.toDropBoxFile(this@DropBoxDriver)
+                } else {
+                    DropBoxFile(
+                        this@DropBoxDriver,
+                        DropBoxPath("/"),
+                        true,
+                        "root",
+                        true
+                    )
+                }
             }
 
             withContext(Dispatchers.Main) {
-                callback(file)
+                callback(result)
             }
         }
     }

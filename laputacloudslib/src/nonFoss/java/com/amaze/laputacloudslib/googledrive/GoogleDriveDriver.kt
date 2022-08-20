@@ -1,5 +1,7 @@
 package com.amaze.laputacloudslib.googledrive
 
+import arrow.core.Either
+import arrow.core.computations.either
 import com.amaze.laputacloudslib.AbstractFileStructureDriver
 import com.google.api.services.drive.Drive
 import com.google.api.services.drive.model.FileList
@@ -13,21 +15,24 @@ class GoogleDriveDriver(val googleDriveService: Drive): AbstractFileStructureDri
 
     override suspend fun getFiles(
         path: GoogleDrivePath,
-        callback: suspend (List<GoogleDriveFile>) -> Unit
+        callback: suspend (Either<Exception, List<GoogleDriveFile>>) -> Unit
     ) {
         withContext(Dispatchers.IO) {
-            val fileList: FileList = googleDriveService.files().list().setSpaces("drive").execute()
-            val processed = fileList.files.map {
-                GoogleDriveFile(it.name, GoogleDrivePath(it.id, false))
+            val result = either<Exception, List<GoogleDriveFile>> {
+                val fileList: FileList =
+                    googleDriveService.files().list().setSpaces("drive").execute()
+                fileList.files.map {
+                    GoogleDriveFile(it.name, GoogleDrivePath(it.id, false))
+                }
             }
 
             withContext(Dispatchers.Main) {
-                callback(processed)
+                callback(result)
             }
         }
     }
 
-    override suspend fun getFile(path: GoogleDrivePath, callback: suspend (GoogleDriveFile) -> Unit) {
+    override suspend fun getFile(path: GoogleDrivePath, callback: suspend (Either<Exception, GoogleDriveFile>) -> Unit) {
         TODO("Not yet implemented")
     }
 

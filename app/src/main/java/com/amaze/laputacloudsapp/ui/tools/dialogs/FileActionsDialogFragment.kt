@@ -4,10 +4,12 @@ import android.app.Dialog
 import android.os.Build
 import android.os.Bundle
 import android.os.Environment
+import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
 import androidx.fragment.app.DialogFragment
 import androidx.fragment.app.viewModels
 import androidx.navigation.fragment.findNavController
+import arrow.core.Either
 import com.amaze.laputacloudsapp.models.UploadViewModel
 import com.amaze.laputacloudsapp.ui.tools.FileManagerFragment
 import com.amaze.laputacloudsapp.ui.tools.FileManagerViewModel
@@ -16,6 +18,7 @@ import com.amaze.laputacloudslib.AbstractCloudFile
 import com.amaze.laputacloudslib.AbstractFileStructureDriver
 import com.amaze.laputacloudslib.CloudPath
 import com.google.android.material.snackbar.Snackbar
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
@@ -41,29 +44,34 @@ class FileActionsDialogFragment<Path: CloudPath, CloudFile: AbstractCloudFile<Pa
         },
         "Download" to {
             file.download { inputStream ->
-                val downloadSnack =
-                    Snackbar.make(
-                        fileManagerFragment.requireView(),
-                        "Downloading...",
-                        Snackbar.LENGTH_INDEFINITE
-                    )
-                downloadSnack.show()
+                when(inputStream) {
+                    is Either.Left -> Toast.makeText(context, "Error: ${inputStream.value.message}", Toast.LENGTH_LONG).show()
+                    is Either.Right -> {
+                        val downloadSnack =
+                            Snackbar.make(
+                                fileManagerFragment.requireView(),
+                                "Downloading...",
+                                Snackbar.LENGTH_INDEFINITE
+                            )
+                        downloadSnack.show()
 
-                val downloadFolder =
-                    if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) {
-                        Environment.getExternalStoragePublicDirectory(
-                            Environment.DIRECTORY_DOWNLOADS
-                        )
-                    } else {
-                        fileManagerFragment.requireContext().filesDir
-                    }
+                        val downloadFolder =
+                            if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) {
+                                Environment.getExternalStoragePublicDirectory(
+                                    Environment.DIRECTORY_DOWNLOADS
+                                )
+                            } else {
+                                fileManagerFragment.requireContext().filesDir
+                            }
 
-                val downloadFile = File(downloadFolder, file.name)
-                downloadFile.createNewFile()
-                GlobalScope.launch {
-                    downloadFile.copyInputStreamToFile(inputStream)
-                    launch(Dispatchers.Main) {
-                        downloadSnack.dismiss()
+                        val downloadFile = File(downloadFolder, file.name)
+                        downloadFile.createNewFile()
+                        CoroutineScope(Dispatchers.Main).launch {
+                            downloadFile.copyInputStreamToFile(inputStream.value)
+                            launch(Dispatchers.Main) {
+                                downloadSnack.dismiss()
+                            }
+                        }
                     }
                 }
             }

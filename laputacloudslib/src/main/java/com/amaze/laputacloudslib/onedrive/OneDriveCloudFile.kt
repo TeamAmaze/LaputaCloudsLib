@@ -1,5 +1,7 @@
 package com.amaze.laputacloudslib.onedrive
 
+import arrow.core.Either
+import arrow.core.computations.either
 import com.amaze.laputacloudslib.AbstractCloudFile
 import com.onedrive.sdk.concurrency.IProgressCallback
 import com.onedrive.sdk.core.ClientException
@@ -13,6 +15,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.io.InputStream
 
+//TODO check for crash everywhere
 class OneDriveCloudFile(
     val driver: OneDriveDriver,
     override val path: OneDrivePath,
@@ -27,110 +30,160 @@ class OneDriveCloudFile(
 
     override val byteSize = item.size
 
-    override fun getParent(callback: suspend (OneDriveCloudFile?) -> Unit) {
-        path
+    override fun getParent(callback: suspend (Either<Exception, OneDriveCloudFile>) -> Unit) {
+        CoroutineScope(Dispatchers.IO).launch {
+            val guessedParentPath = either<Exception, OneDrivePath> {
+                if (isRootDirectory) {
+                    throw Exception("Is root")
+                }
 
-        if(isRootDirectory) {
-            CoroutineScope(Dispatchers.Main).launch {
-                callback(null)
+                path.getParentFromPath()
+            }
+
+            when (guessedParentPath) {
+                is Either.Left -> {
+                    withContext(Dispatchers.Main) {
+                        callback(guessedParentPath)
+                    }
+                }
+                is Either.Right -> {
+                    driver.oneDriveClient.drive.root.getItemWithPath(guessedParentPath.value.sanitizedPath)
+                        .buildRequest()
+                        .get(
+                            crashOnFailure { parent: Either<Exception, Item> ->
+                                val result = either<Exception, OneDriveCloudFile> {
+                                    OneDriveCloudFile(
+                                        driver,
+                                        guessedParentPath.value,
+                                        parent.bind(),
+                                        guessedParentPath.value.sanitizedPath == "/"
+                                    )
+                                }
+
+                                callback(result)
+                            })
+                }
             }
         }
-
-        val guessedParentPath = path.getParentFromPath()
-
-        driver.oneDriveClient.drive.root.getItemWithPath(guessedParentPath.sanitizedPath).buildRequest().get(
-            crashOnFailure { result ->
-                callback(
-                    OneDriveCloudFile(
-                        driver,
-                        guessedParentPath,
-                        result,
-                        guessedParentPath.sanitizedPath == "/"
-                    )
-                )
-            })
     }
 
-    override fun delete(callback: () -> Unit) {
-        driver.oneDriveClient.drive.root.getItemWithPath(path.sanitizedPath).buildRequest().delete(
-            crashOnFailure {
-                callback()
-            })
+    override fun delete(callback: (Either<Exception, Unit>) -> Unit) {
+        CoroutineScope(Dispatchers.IO).launch {
+            driver.oneDriveClient.drive
+                .root
+                .getItemWithPath(path.sanitizedPath)
+                .buildRequest()
+                .delete(crashOnFailure {
+                    callback(it.map { Unit })
+                })
+        }
     }
 
-    override fun copyTo(newName: String, folder: OneDriveCloudFile, callback: (OneDriveCloudFile) -> Unit) {
-        folder
-
+    override fun copyTo(newName: String, folder: OneDriveCloudFile, callback: (Either<Exception, OneDriveCloudFile>) -> Unit) {
         val parentReferenceForFolder = folder.item.toItemReference()
 
         driver.oneDriveClient.drive.getItems(item.id).getCopy(newName, parentReferenceForFolder).buildRequest().post(
             crashOnFailure { asyncMonitor ->
-                asyncMonitor.pollForResult(750, object : IProgressCallback<Item> {
-                    override fun success(result: Item) {
-                        callback(OneDriveCloudFile(
-                            driver,
-                            folder.path.join(newName),
-                            result,
-                            false
-                        ))
+                when(asyncMonitor) {
+                    is Either.Left -> {
+                        callback(asyncMonitor)
                     }
+                    is Either.Right -> {
+                        asyncMonitor.value.pollForResult(750, object : IProgressCallback<Item> {
+                            override fun success(item: Item) {
+                                val result = OneDriveCloudFile(
+                                    driver,
+                                    folder.path.join(newName),
+                                    item,
+                                    false
+                                )
 
-                    override fun failure(ex: ClientException) {
-                        throw OneDriveIOException(ex)
+                                callback(Either.Right(result))
+                            }
+
+                            override fun failure(ex: ClientException) {
+                                callback(Either.Left(OneDriveIOException(ex)))
+                            }
+
+                            override fun progress(current: Long, max: Long) = Unit
+                        })
                     }
+                }
 
-                    override fun progress(current: Long, max: Long) = Unit
 
-                })
             })
     }
 
     @Suppress("unused")
-    fun copyToWithStatus(newName: String, folder: OneDriveCloudFile, callback: (OneDriveCopyStatus) -> Unit) {
+    fun copyToWithStatus(newName: String, folder: OneDriveCloudFile, callback: (Either<Exception, OneDriveCopyStatus>) -> Unit) {
         val parentReferenceForFolder = folder.item.toItemReference()
 
-        driver.oneDriveClient.drive.getItems(item.id).getCopy(newName, parentReferenceForFolder).buildRequest().post(
-            crashOnFailure { asyncMonitor ->
-                callback(
-                    OneDriveCopyStatus(
-                        asyncMonitor
-                    )
-                )
+        driver.oneDriveClient.drive
+            .getItems(item.id)
+            .getCopy(newName, parentReferenceForFolder)
+            .buildRequest()
+            .post(crashOnFailure { asyncMonitor ->
+                val result = when (asyncMonitor) {
+                    is Either.Left -> asyncMonitor
+                    is Either.Right -> Either.Right(OneDriveCopyStatus(asyncMonitor.value))
+                }
+
+                callback(result)
             })
     }
 
-    override fun moveTo(newName: String, folder: OneDriveCloudFile, callback: (OneDriveCloudFile) -> Unit) {
+    override fun moveTo(newName: String, folder: OneDriveCloudFile, callback: (Either<Exception, OneDriveCloudFile>) -> Unit) {
         val newItem = Item().also {
             it.name = newName
             it.parentReference = folder.item.toItemReference()
         }
 
-        driver.oneDriveClient.drive.getItems(item.id).buildRequest().patch(newItem,
-            crashOnFailure { item ->
-                callback(
+        driver.oneDriveClient.drive
+            .getItems(item.id)
+            .buildRequest()
+            .patch(newItem, crashOnFailure { item ->
+                val result = either<Exception, OneDriveCloudFile> {
                     OneDriveCloudFile(
                         driver,
                         path,
-                        item,
+                        item.bind(),
                         false
                     )
-                )
+                }
+
+                callback(result)
             })
     }
 
-    override fun download(callback: (InputStream) -> Unit) {
-        driver.oneDriveClient.drive.getItems(item.id).content.buildRequest().get(crashOnFailure { inputStream ->
-            callback(inputStream)
-        })
+    override fun download(callback: (Either<Exception, InputStream>) -> Unit) {
+        driver.oneDriveClient.drive
+            .getItems(item.id)
+            .content
+            .buildRequest()
+            .get(crashOnFailure(callback))
     }
 
     override fun uploadHere(
         fileToUpload: OneDriveCloudFile,
         onProgress: ((bytes: Long) -> Unit)?,
-        callback: (uploadedFile: OneDriveCloudFile) -> Unit
+        callback: (uploadedFile: Either<Exception, OneDriveCloudFile>) -> Unit
     ) {
         fileToUpload.download { inputStream ->
-            uploadHere(inputStream, fileToUpload.name, fileToUpload.byteSize, onProgress, callback)
+            when (inputStream) {
+                is Either.Left -> {
+                    callback(inputStream)
+                }
+                is Either.Right -> {
+                    uploadHere(
+                        inputStream.value,
+                        fileToUpload.name,
+                        fileToUpload.byteSize,
+                        onProgress,
+                        callback
+                    )
+                }
+            }
+
         }
     }
 
@@ -139,7 +192,7 @@ class OneDriveCloudFile(
         name: String,
         size: Long,
         onProgress: ((bytes: Long) -> Unit)?,
-        callback: (uploadedFile: OneDriveCloudFile) -> Unit
+        callback: (uploadedFile: Either<Exception, OneDriveCloudFile>) -> Unit
     ) {
         CoroutineScope(Dispatchers.IO).launch {
             if (size <= 3 * 1024 * 1024) {
@@ -155,26 +208,27 @@ class OneDriveCloudFile(
     suspend fun uploadAsSmallFile(
         inputStream: InputStream,
         name: String,
-        callback: (uploadedFile: OneDriveCloudFile) -> Unit
-    )= withContext(Dispatchers.IO) {
-        driver.oneDriveClient.drive
-            .getItems(item.id)
-            .children
-            .byId(name)
-            .content
-            .buildRequest()
-            .put(inputStream.readBytes(),
-                crashOnFailure {
-                    CoroutineScope(Dispatchers.Main).launch {
-                        callback(
-                            OneDriveCloudFile(
-                                driver,
-                                path.join(name),
-                                it
-                            )
+        callback: (uploadedFile: Either<Exception, OneDriveCloudFile>) -> Unit
+    ) {
+        withContext(Dispatchers.IO) {
+            driver.oneDriveClient.drive
+                .getItems(item.id)
+                .children
+                .byId(name)
+                .content
+                .buildRequest()
+                .put(inputStream.readBytes(), crashOnFailure {
+                    val result = either<Exception, OneDriveCloudFile> {
+                        OneDriveCloudFile(
+                            driver,
+                            path.join(name),
+                            it.bind()
                         )
                     }
+
+                    callback(result)
                 })
+        }
     }
 
     /**
@@ -186,49 +240,53 @@ class OneDriveCloudFile(
         name: String,
         size: Long,
         onProgress: ((bytes: Long) -> Unit)?,
-        callback: (uploadedFile: OneDriveCloudFile) -> Unit
-    ) = withContext(Dispatchers.IO) {
-        val fileCompletePath = path.join(name)
+        callback: (uploadedFile: Either<Exception, OneDriveCloudFile>) -> Unit
+    ) {
+        withContext(Dispatchers.IO) {
+            val fileCompletePath = path.join(name)
 
-        driver.oneDriveClient.drive.root.getItemWithPath(path.sanitizedPath)
-            .getCreateSession(ChunkedUploadSessionDescriptor()).buildRequest().post()
-            .createUploadProvider(
-                driver.oneDriveClient,
-                inputStream,
-                size.toInt(),
-                Item::class.java
-            ).upload(
-                listOf(
-                    QueryOption(
-                        "@name.conflictBehavior",
-                        "fail"
-                    )
-                ),
-                object :
-                    IProgressCallback<Item> {
-                    override fun progress(current: Long, max: Long) {
-                        onProgress?.invoke(current)//TODO this should run in [Dispatchers::Main]
-                    }
+            driver.oneDriveClient.drive.root.getItemWithPath(path.sanitizedPath)
+                .getCreateSession(ChunkedUploadSessionDescriptor()).buildRequest().post()
+                .createUploadProvider(
+                    driver.oneDriveClient,
+                    inputStream,
+                    size.toInt(),
+                    Item::class.java
+                ).upload(
+                    listOf(
+                        QueryOption(
+                            "@name.conflictBehavior",
+                            "fail"
+                        )
+                    ),
+                    object :
+                        IProgressCallback<Item> {
+                        override fun progress(current: Long, max: Long) {
+                            CoroutineScope(Dispatchers.Main).launch {
+                                onProgress?.invoke(current)
+                            }
+                        }
 
-                    override fun success(result: Item) {
-                        CoroutineScope(Dispatchers.Main).launch {
-                            callback(
-                                OneDriveCloudFile(
+                        override fun success(item: Item) {
+                            CoroutineScope(Dispatchers.Main).launch {
+                                val result = OneDriveCloudFile(
                                     driver,
                                     fileCompletePath,
-                                    result
+                                    item
                                 )
-                            )
+
+                                callback(Either.Right(result))
+                            }
+                        }
+
+                        override fun failure(ex: ClientException) {
+                            CoroutineScope(Dispatchers.Main).launch {
+                                callback(Either.Left(OneDriveIOException(ex)))
+                            }
                         }
                     }
-
-                    override fun failure(ex: ClientException) {
-                        throw OneDriveIOException(
-                            ex
-                        )
-                    }
-                }
-            )
+                )
+        }
     }
 
     companion object {

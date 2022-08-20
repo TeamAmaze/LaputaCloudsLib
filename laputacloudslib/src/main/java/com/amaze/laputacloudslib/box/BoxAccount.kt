@@ -1,8 +1,9 @@
 package com.amaze.laputacloudslib.box
 
 import android.content.Context
+import arrow.core.Either
+import arrow.core.computations.either
 import com.amaze.laputacloudslib.AbstractAccount
-import com.amaze.laputacloudslib.AbstractFileStructureDriver
 import com.box.androidsdk.content.BoxApiFile
 import com.box.androidsdk.content.BoxApiFolder
 import com.box.androidsdk.content.BoxConfig
@@ -27,52 +28,81 @@ class BoxAccount(
         it.setSessionAuthListener(this)
     }
 
-    lateinit var callback: suspend (BoxDriver) -> Unit
+    lateinit var callback: suspend (Either<Exception, BoxDriver>) -> Unit
 
-    override suspend fun tryLogInAsync(callback: suspend (BoxDriver) -> Unit) {
-        this.callback = callback
+    override suspend fun tryLogInAsync(callback: suspend (Either<Exception, BoxDriver>) -> Unit) {
+        CoroutineScope(Dispatchers.IO).launch {
+            this@BoxAccount.callback = callback
 
-        session.authenticate(context)
+            try {
+                session.authenticate(context)
+            } catch (e: Exception) {
+                callback(Either.Left(e))
+            }
+        }
     }
 
     override fun onLoggedOut(info: BoxAuthentication.BoxAuthenticationInfo?, ex: Exception?) {
-        if(info != null && ex != null) {
-            throw BoxAccountException("Logged out of Box: " + info.toJson(), ex)
-        } else if(info == null && ex != null) {
-            throw BoxAccountException("Logged out of Box", ex)
-        } else if(info != null && ex == null) {
-            throw BoxAccountException("Logged out of Box: " + info.toJson())
-        } else if(info == null && ex == null) {
-            throw BoxAccountException("Logged out of Box")
+        CoroutineScope(Dispatchers.Main).launch {
+            val result = either<Exception, BoxDriver> {
+                if (info != null && ex != null) {
+                    throw BoxAccountException("Logged out of Box: " + info.toJson(), ex)
+                } else if (info == null && ex != null) {
+                    throw BoxAccountException("Logged out of Box", ex)
+                } else if (info != null && ex == null) {
+                    throw BoxAccountException("Logged out of Box: " + info.toJson())
+                } else {// info == null && ex == null
+                    throw BoxAccountException("Logged out of Box")
+                }
+            }
+
+            callback(result)
         }
     }
 
     override fun onAuthCreated(info: BoxAuthentication.BoxAuthenticationInfo?) {
-        val folderApi = BoxApiFolder(session)
-        val fileApi = BoxApiFile(session)
+        CoroutineScope(Dispatchers.IO).launch {
+            val result = either<Exception, BoxDriver> {
+                val folderApi = BoxApiFolder(session)
+                val fileApi = BoxApiFile(session)
+                BoxDriver(folderApi, fileApi)
+            }
 
-        CoroutineScope(Dispatchers.Main).launch {
-            callback(BoxDriver(folderApi, fileApi))
+            CoroutineScope(Dispatchers.Main).launch {
+                callback(result)
+            }
         }
     }
 
     override fun onRefreshed(info: BoxAuthentication.BoxAuthenticationInfo?) {
-        if(info != null) {
-            throw BoxAccountException("Connection was restarted: " + info.toJson())
-        } else {
-            throw BoxAccountException("Connection was restarted")
+        CoroutineScope(Dispatchers.Main).launch {
+            val result = either<Exception, BoxDriver> {
+                if (info != null) {
+                    throw BoxAccountException("Connection was restarted: " + info.toJson())
+                } else {
+                    throw BoxAccountException("Connection was restarted")
+                }
+            }
+
+            callback(result)
         }
     }
 
     override fun onAuthFailure(info: BoxAuthentication.BoxAuthenticationInfo?, ex: Exception?) {
-        if(info != null && ex != null) {
-            throw BoxAccountException("Auth failure: " + info.toJson(), ex)
-        } else if(info == null && ex != null) {
-            throw BoxAccountException("Auth failure", ex)
-        } else if(info != null && ex == null) {
-            throw BoxAccountException("Auth failure: " + info.toJson())
-        } else if(info == null && ex == null) {
-            throw BoxAccountException("Auth failure")
+        CoroutineScope(Dispatchers.Main).launch {
+            val result = either<Exception, BoxDriver> {
+                if (info != null && ex != null) {
+                    throw BoxAccountException("Auth failure: " + info.toJson(), ex)
+                } else if (info == null && ex != null) {
+                    throw BoxAccountException("Auth failure", ex)
+                } else if (info != null && ex == null) {
+                    throw BoxAccountException("Auth failure: " + info.toJson())
+                } else {// info == null && ex == null
+                    throw BoxAccountException("Auth failure")
+                }
+            }
+
+            callback(result)
         }
     }
 }

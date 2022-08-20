@@ -1,5 +1,6 @@
 package com.amaze.laputacloudslib.googledrive
 
+import arrow.core.Either
 import com.amaze.laputacloudslib.AbstractCloudFile
 import com.amaze.laputacloudslib.CloudPath
 import java.io.InputStream
@@ -15,18 +16,18 @@ class GoogleDriveFile(
     override val byteSize: Long
         get() = TODO("Not yet implemented")
 
-    override fun getParent(callback: suspend (GoogleDriveFile?) -> Unit) {
+    override fun getParent(callback: suspend (Either<Exception, GoogleDriveFile>) -> Unit) {
         TODO("Not yet implemented")
     }
 
-    override fun delete(callback: () -> Unit) {
+    override fun delete(callback: (Either<Exception, Unit>) -> Unit) {
         TODO("Not yet implemented")
     }
 
     override fun copyTo(
         newName: String,
         folder: GoogleDriveFile,
-        callback: (GoogleDriveFile) -> Unit
+        callback: (Either<Exception, GoogleDriveFile>) -> Unit
     ) {
         TODO("Not yet implemented")
     }
@@ -34,19 +35,19 @@ class GoogleDriveFile(
     override fun moveTo(
         newName: String,
         folder: GoogleDriveFile,
-        callback: (GoogleDriveFile) -> Unit
+        callback: (Either<Exception, GoogleDriveFile>) -> Unit
     ) {
         TODO("Not yet implemented")
     }
 
-    override fun download(callback: (InputStream) -> Unit) {
+    override fun download(callback: (Either<Exception, InputStream>) -> Unit) {
         TODO("Not yet implemented")
     }
 
     override fun uploadHere(
         fileToUpload: GoogleDriveFile,
         onProgress: ((bytes: Long) -> Unit)?,
-        callback: (uploadedFile: GoogleDriveFile) -> Unit
+        callback: (uploadedFile: Either<Exception, GoogleDriveFile>) -> Unit
     ) {
         TODO("Not yet implemented")
     }
@@ -56,7 +57,7 @@ class GoogleDriveFile(
         name: String,
         size: Long,
         onProgress: ((bytes: Long) -> Unit)?,
-        callback: (uploadedFile: GoogleDriveFile) -> Unit
+        callback: (uploadedFile: Either<Exception, GoogleDriveFile>) -> Unit
     ) {
         TODO("Not yet implemented")
     }

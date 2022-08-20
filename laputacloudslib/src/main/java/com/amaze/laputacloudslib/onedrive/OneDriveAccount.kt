@@ -1,6 +1,8 @@
 package com.amaze.laputacloudslib.onedrive
 
 import android.app.Activity
+import arrow.core.Either
+import arrow.core.computations.either
 import com.amaze.laputacloudslib.AbstractAccount
 import com.amaze.laputacloudslib.AbstractFileStructureDriver
 import com.onedrive.sdk.authentication.ADALAuthenticator
@@ -27,54 +29,64 @@ class OneDriveAccount(
     private val adalClientId: String?
 ): AbstractAccount<OneDrivePath, OneDriveCloudFile, OneDriveDriver>() {
     val msaAuthenticator = object : MSAAuthenticator() {
-        override fun getClientId()= msaaClientId
+        override fun getClientId() = msaaClientId
 
         override fun getScopes() = arrayOf("onedrive.readwrite")
     }
 
     val adalAuthenticator = object : ADALAuthenticator() {
-        override fun getClientId()= adalClientId
+        override fun getClientId() = adalClientId
 
         override fun getRedirectUrl() = redirectionUri
     }
 
-    override suspend fun tryLogInAsync(callback: suspend (OneDriveDriver) -> Unit) {
-        val oneDriveConfig: IClientConfig =
-            if(msaaClientId != null && redirectionUri != null && adalClientId != null) {
-                DefaultClientConfig.createWithAuthenticators(
-                    msaAuthenticator,
-                    adalAuthenticator
-                )
-            } else if(msaaClientId != null && redirectionUri != null) {
-                DefaultClientConfig.createWithAuthenticator(
-                    msaAuthenticator
-                )
-            } else if(adalClientId != null) {
-                DefaultClientConfig.createWithAuthenticator(
-                    adalAuthenticator
-                )
-            } else {
-                if(msaaClientId != null && redirectionUri == null) {
-                    throw IllegalArgumentException("Redirection uri must not be null (MSA auth used)!")
+    override suspend fun tryLogInAsync(callback: suspend (Either<Exception, OneDriveDriver>) -> Unit) {
+        CoroutineScope(Dispatchers.IO).launch {
+            val oneDriveConfig = either<Exception, IClientConfig> {
+                if (msaaClientId != null && redirectionUri != null && adalClientId != null) {
+                    DefaultClientConfig.createWithAuthenticators(
+                        msaAuthenticator,
+                        adalAuthenticator
+                    )
+                } else if (msaaClientId != null && redirectionUri != null) {
+                    DefaultClientConfig.createWithAuthenticator(
+                        msaAuthenticator
+                    )
+                } else if (adalClientId != null) {
+                    DefaultClientConfig.createWithAuthenticator(
+                        adalAuthenticator
+                    )
+                } else {
+                    if (msaaClientId != null && redirectionUri == null) {
+                        throw IllegalArgumentException("Redirection uri must not be null (MSA auth used)!")
+                    }
+                    throw IllegalArgumentException("At least one client id is needed!")
                 }
-                throw IllegalArgumentException("At least one client id is needed!")
             }
 
+            when (oneDriveConfig) {
+                is Either.Left -> {
+                    callback(oneDriveConfig)
+                }
+                is Either.Right -> {
+                    OneDriveClient.Builder()
+                        .fromConfig(oneDriveConfig.value)
+                        .loginAndBuildClient(activity, object :
+                            ICallback<IOneDriveClient> {
+                            override fun success(oneDriveClient: IOneDriveClient) {
+                                CoroutineScope(Dispatchers.Main).launch {
+                                    callback(Either.Right(OneDriveDriver(oneDriveClient)))
+                                }
+                            }
 
-        OneDriveClient.Builder()
-                .fromConfig(oneDriveConfig)
-                .loginAndBuildClient(activity, object:
-                    ICallback<IOneDriveClient> {
-                    override fun success(oneDriveClient: IOneDriveClient) {
-                        CoroutineScope(Dispatchers.Main).launch {
-                            callback(OneDriveDriver(oneDriveClient))
-                        }
-
-                    }
-
-                    override fun failure(ex: ClientException) {
-                        throw ex
-                    }
-                })
+                            override fun failure(ex: ClientException) {
+                                CoroutineScope(Dispatchers.Main).launch {
+                                    callback(Either.Left(ex))
+                                }
+                            }
+                        })
+                }
+            }
+        }
     }
 }

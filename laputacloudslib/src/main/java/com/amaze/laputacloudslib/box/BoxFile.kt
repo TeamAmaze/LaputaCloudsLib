@@ -1,5 +1,6 @@
 package com.amaze.laputacloudslib.box
 
+import arrow.core.Either
 import com.amaze.laputacloudslib.AbstractCloudFile
 import com.box.androidsdk.content.BoxApiFile
 import com.box.androidsdk.content.listeners.ProgressListener
@@ -22,23 +23,46 @@ class BoxFile(
     override val byteSize: Long
         get() = info.size
 
-    override fun getParent(callback: suspend (BoxFile?) -> Unit) {
-        val parent = info.parent
-        val guessedParentPath = path.getParentPathFromPath()
+    override fun getParent(callback: suspend (Either<Exception, BoxFile>) -> Unit) {
+        if(path.isRoot) {
+            CoroutineScope(Dispatchers.Main).launch {
+                callback(Either.Left(Exception("Is root!")))
+            }
+        }
+
+        val file: BoxFile
+
+        try {
+            val parent = info.parent
+            val guessedParentPath = path.getParentPathFromPath()
+            file = BoxFile(fileApi, parent, guessedParentPath)
+        } catch (e: Exception) {
+            CoroutineScope(Dispatchers.Main).launch {
+                callback(Either.Left(e))
+            }
+            return
+        }
 
         CoroutineScope(Dispatchers.Main).launch {
-            callback(BoxFile(fileApi, parent, guessedParentPath))
+            callback(Either.Right(file))
         }
     }
 
-    override fun delete(callback: () -> Unit) {
+    override fun delete(callback: (Either<Exception, Unit>) -> Unit) {
         CoroutineScope(Dispatchers.IO)
             .launch {
-                fileApi.getDeleteRequest(info.id).send()
+                try {
+                    fileApi.getDeleteRequest(info.id).send()
+                } catch (e: Exception) {
+                    CoroutineScope(Dispatchers.Main).launch {
+                        callback(Either.Left(e))
+                    }
+                    return@launch
+                }
 
                 CoroutineScope(Dispatchers.Main)
                     .launch {
-                        callback()
+                        callback(Either.Right(Unit))
                     }
             }
     }
@@ -46,7 +70,7 @@ class BoxFile(
     override fun copyTo(
         newName: String,
         folder: BoxFile,
-        callback: (BoxFile) -> Unit
+        callback: (Either<Exception, BoxFile>) -> Unit
     ) {
         TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
     }
@@ -54,21 +78,27 @@ class BoxFile(
     override fun moveTo(
         newName: String,
         folder: BoxFile,
-        callback: (BoxFile) -> Unit
+        callback: (Either<Exception, BoxFile>) -> Unit
     ) {
         TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
     }
 
-    override fun download(callback: (InputStream) -> Unit) {
+    override fun download(callback: (Either<Exception, InputStream>) -> Unit) {
         CoroutineScope(Dispatchers.IO)
             .launch {
                 val input = PipedInputStream()
                 val out = PipedOutputStream(input)
-                fileApi.getDownloadRequest(out, info.id).send()
+
+                try {
+                    fileApi.getDownloadRequest(out, info.id).send()
+                } catch (e: Exception) {
+                    callback(Either.Left(e))
+                    return@launch
+                }
 
                 CoroutineScope(Dispatchers.Main)
                     .launch {
-                        callback(input)
+                        callback(Either.Right(input))
                     }
             }
     }
@@ -76,7 +106,7 @@ class BoxFile(
     override fun uploadHere(
         fileToUpload: BoxFile,
         onProgress: ((bytes: Long) -> Unit)?,
-        callback: (uploadedFile: BoxFile) -> Unit
+        callback: (uploadedFile: Either<Exception, BoxFile>) -> Unit
     ) {
         TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
     }
@@ -86,28 +116,36 @@ class BoxFile(
         name: String,
         size: Long,
         onProgress: ((bytes: Long) -> Unit)?,
-        callback: (uploadedFile: BoxFile) -> Unit
+        callback: (uploadedFile: Either<Exception, BoxFile>) -> Unit
     ) {
         CoroutineScope(Dispatchers.IO)
             .launch {
-                val uploadedFile: com.box.androidsdk.content.models.BoxFile? = fileApi.getUploadRequest(
-                    inputStream,
-                    name,
-                    info.id
-                )
-                .setProgressListener { numBytes, _ ->
-                    CoroutineScope(Dispatchers.Main)
-                        .launch {
-                            onProgress?.invoke(numBytes)
+                val uploadedFile: com.box.androidsdk.content.models.BoxFile? = try {
+                    fileApi.getUploadRequest(
+                        inputStream,
+                        name,
+                        info.id
+                    )
+                        .setProgressListener { numBytes, _ ->
+                            CoroutineScope(Dispatchers.Main)
+                                .launch {
+                                    onProgress?.invoke(numBytes)
+                                }
                         }
+                        .send()
+                } catch (e: Exception) {
+                    callback(Either.Left(e))
+                    return@launch
                 }
-                .send()
 
-                uploadedFile ?: throw BoxAccountException("Error uploading")
+                if(uploadedFile == null) {
+                    callback(Either.Left(BoxAccountException("Error uploading")))
+                    return@launch
+                }
 
                 CoroutineScope(Dispatchers.Main)
                     .launch {
-                        callback(BoxFile(fileApi, uploadedFile, path.join(name)))
+                        callback(Either.Right(BoxFile(fileApi, uploadedFile, path.join(name))))
                     }
             }
     }
