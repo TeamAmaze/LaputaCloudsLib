@@ -21,8 +21,7 @@ class BasicEspressoTest {
     var activityScenarioRule = ActivityScenarioRule(MainActivity::class.java)
 
     @Test
-    fun checkAppList() {
-
+    fun basicInstrumentedTest() {
         onView(withContentDescription("Open navigation drawer")).perform(click())
         onView(withText(R.string.app_folder)).perform(click())
         onView(withId(R.id.swipeRefreshLayout)).check(matches(isDisplayed()))
