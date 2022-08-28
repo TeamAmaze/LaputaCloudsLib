@@ -2,29 +2,35 @@ package com.amaze.laputacloudslib.googledrive
 
 import android.content.Context
 import android.content.Intent
+import arrow.core.Either
+import arrow.core.computations.either
 import com.amaze.laputacloudslib.AbstractAccount
-import com.amaze.laputacloudslib.AbstractFileStructureDriver
 import com.google.api.client.auth.oauth2.Credential
 import com.google.api.services.drive.Drive
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 
-/**
- * Be sure to specify the name of your application. If the application name is {@code null} or
- * blank, the application will log a warning. Suggested format is "MyCompany-ProductName/1.0".
- */
 class GoogleAccount(
     val context: Context,
     val applicationName: String?,
     val clientId: String,
     val redirectUrl: String
-) : AbstractAccount() {
+) : AbstractAccount<GoogleDrivePath, GoogleDriveFile, GoogleDriveDriver>() {
     private val drive: Drive? = null
 
 
-    override suspend fun tryLogInAsync(callback: suspend (AbstractFileStructureDriver) -> Unit) {
+    override suspend fun tryLogInAsync(callback: suspend (Either<Exception, GoogleDriveDriver>) -> Unit) {
         val onAuthorized = { credential : Credential ->
-            //val drive = Drive.Builder(httpTransport, JSON_FACTORY, credential)
-            //    .setApplicationName(applicationName)
-            //    .build()
+            CoroutineScope(Dispatchers.Main).launch {
+                val result = either<Exception, GoogleDriveDriver> {
+                    //val drive = Drive.Builder(httpTransport, JSON_FACTORY, credential)
+                    //    .setApplicationName(applicationName)
+                    //    .build()
+                    TODO("Implement")
+                }
+                callback(result)
+            }
         }
 
         val intent = Intent(context, GoogleDriveOAuthActivity::class.java)
