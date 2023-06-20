@@ -34,6 +34,7 @@ android {
             dimension "version"
         }
     }
+    namespace 'com.amaze.laputacloudslib'
 }
 
 dependencies {

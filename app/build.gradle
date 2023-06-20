@@ -55,6 +55,7 @@ android {
             excludes += ['META-INF/DEPENDENCIES']
         }
     }
+    namespace 'com.amaze.laputacloudsapp'
 
 }
 
